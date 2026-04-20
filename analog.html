@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>&#8212;</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <style>
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
@@ -24,8 +27,25 @@
       user-select: none;
     }
 
-    @media (prefers-color-scheme: dark)  { body { background: #0c0c0c; } .bg { fill: #0c0c0c; } }
-    @media (prefers-color-scheme: light) { body { background: #f5f5f3; } .bg { fill: #f5f5f3; } }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0c0c0c;
+      }
+
+      .bg {
+        fill: #0c0c0c;
+      }
+    }
+
+    @media (prefers-color-scheme: light) {
+      body {
+        background: #f5f5f3;
+      }
+
+      .bg {
+        fill: #f5f5f3;
+      }
+    }
 
     #clock {
       width: min(70vw, 70vh);
@@ -37,13 +57,18 @@
     /* All clock elements use difference blending against white.
        On dark bg:  white → appears white; white-on-white → inverts to black.
        On light bg: white → appears near-black; overlaps re-invert.       */
-    .tick, .hand, .pip {
+    .tick,
+    .hand,
+    .pip {
       mix-blend-mode: difference;
-      fill:   white;
+      fill: white;
       stroke: white;
     }
+
     /* Hands are filled rects — stroke would default to 1 SVG user unit (enormous) */
-    .hand { stroke: none; }
+    .hand {
+      stroke: none;
+    }
 
     /* ── Tab ── */
     .tab {
@@ -59,18 +84,31 @@
       align-items: center;
       justify-content: center;
     }
-    .tab:hover { opacity: 0.55; }
 
-    @media (prefers-color-scheme: dark)  { .tab { color: #f0f0f0; } }
-    @media (prefers-color-scheme: light) { .tab { color: #111111; } }
+    .tab:hover {
+      opacity: 0.55;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .tab {
+        color: #f0f0f0;
+      }
+    }
+
+    @media (prefers-color-scheme: light) {
+      .tab {
+        color: #111111;
+      }
+    }
   </style>
 </head>
+
 <body>
 
   <svg id="clock" viewBox="-1 -1 2 2">
 
     <!-- Solid background so blend modes have a known base -->
-    <rect x="-1" y="-1" width="2" height="2" class="bg"/>
+    <rect x="-1" y="-1" width="2" height="2" class="bg" />
 
     <!-- 60 tick marks, generated below -->
     <g id="ticks"></g>
@@ -83,14 +121,14 @@
     <g id="sHand"></g>
 
     <!-- Centre pip, rendered last so it always reads clearly -->
-    <circle cx="0" cy="0" r="0.036" class="pip"/>
+    <circle cx="0" cy="0" r="0.036" class="pip" />
 
   </svg>
 
   <!-- Tab: dot → back to digital -->
   <a href="index.html" class="tab" aria-label="Digital clock">
     <svg width="36" height="36" viewBox="0 0 36 36">
-      <circle cx="18" cy="18" r="4" fill="currentColor"/>
+      <circle cx="18" cy="18" r="4" fill="currentColor" />
     </svg>
   </a>
 
@@ -99,28 +137,31 @@
     const ticksEl = document.getElementById('ticks');
 
     for (let i = 0; i < 60; i++) {
-      const major = (i % 5 === 0);
-      const a     = i * 6 * Math.PI / 180;
-      const r0    = major ? 0.780 : 0.868;   // inner radius
-      const r1    = 0.940;                    // outer radius (shared)
-      const sw    = major ? 0.026 : 0.009;
+      if (i % 5 !== 0) continue;             // hour positions only; skip minute ticks
+      const a = i * 6 * Math.PI / 180;
 
-      const line  = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', ( Math.sin(a) * r0).toFixed(5));
-      line.setAttribute('y1', (-Math.cos(a) * r0).toFixed(5));
-      line.setAttribute('x2', ( Math.sin(a) * r1).toFixed(5));
-      line.setAttribute('y2', (-Math.cos(a) * r1).toFixed(5));
-      line.setAttribute('stroke-width',   sw);
-      line.setAttribute('stroke-linecap', 'butt');
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', ( Math.sin(a) * 0.780).toFixed(5));
+      line.setAttribute('y1', (-Math.cos(a) * 0.780).toFixed(5));
+      line.setAttribute('x2', ( Math.sin(a) * 0.940).toFixed(5));
+      line.setAttribute('y2', (-Math.cos(a) * 0.940).toFixed(5));
+      line.setAttribute('stroke-width',   0.026);
+      line.setAttribute('stroke-linecap', 'round');
       line.classList.add('tick');
       ticksEl.appendChild(line);
     }
 
     // ─── Hand builders ─────────────────────────────────────────────
-    function mkRect(x, y, w, h) {
+    const PHI = (1 + Math.sqrt(5)) / 2;   // φ ≈ 1.618 (golden ratio)
+    const sW  = 0.005;
+    const mW  = sW * PHI;                 // sW × φ
+    const hW  = mW * PHI;                 // sW × φ²
+
+    function mkRect(x, y, w, h, rx = 0) {
       const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      el.setAttribute('x', x);  el.setAttribute('y', y);
+      el.setAttribute('x', x); el.setAttribute('y', y);
       el.setAttribute('width', w); el.setAttribute('height', h);
+      if (rx) el.setAttribute('rx', rx);
       el.classList.add('hand');
       return el;
     }
@@ -132,21 +173,20 @@
       return el;
     }
 
-    // Hour — thick, short, small counterweight
-    //   rect: x, y (top), width, height
+    // Hour — widest (hW = sW × φ²), short, small counterweight
     document.getElementById('hHand').appendChild(
-      mkRect(-0.0025, -0.500, 0.005, 0.570)   // tip at -0.500, tail at +0.070
+      mkRect(-hW/2, -0.500, hW, 0.570, hW/2)   // tip at -0.500, tail at +0.070
     );
 
-    // Minute — thinner, longer
+    // Minute — medium (mW = sW × φ), longer
     document.getElementById('mHand').appendChild(
-      mkRect(-0.0025, -0.755, 0.005, 0.845)   // tip at -0.755, tail at +0.090
+      mkRect(-mW/2, -0.755, mW, 0.845, mW/2)   // tip at -0.755, tail at +0.090
     );
 
-    // Second — very thin rod + Bauhaus lollipop counterweight
+    // Second — thinnest (sW), + Bauhaus lollipop counterweight
     const sEl = document.getElementById('sHand');
-    sEl.appendChild(mkRect(-0.0025, -0.862, 0.005, 0.952));  // tip -0.862, tail +0.090
-    sEl.appendChild(mkCircle(0, 0.210, 0.040));              // lollipop circle
+    sEl.appendChild(mkRect(-sW/2, -0.862, sW, 0.952, sW/2));  // tip -0.862, tail +0.090
+    sEl.appendChild(mkCircle(0, 0.210, 0.040));                // lollipop circle
 
     // ─── Smooth animation via requestAnimationFrame ─────────────────
     const hG = document.getElementById('hHand');
@@ -155,14 +195,14 @@
 
     function draw() {
       const now = new Date();
-      const ms  = now.getMilliseconds();
-      const s   = now.getSeconds()      + ms   / 1000;
-      const m   = now.getMinutes()      + s    / 60;
-      const h   = (now.getHours() % 12) + m    / 60;
+      const ms = now.getMilliseconds();
+      const s = now.getSeconds() + ms / 1000;
+      const m = now.getMinutes() + s / 60;
+      const h = (now.getHours() % 12) + m / 60;
 
       hG.setAttribute('transform', `rotate(${(h * 30).toFixed(4)})`);
-      mG.setAttribute('transform', `rotate(${(m *  6).toFixed(4)})`);
-      sG.setAttribute('transform', `rotate(${(s *  6).toFixed(4)})`);
+      mG.setAttribute('transform', `rotate(${(m * 6).toFixed(4)})`);
+      sG.setAttribute('transform', `rotate(${(s * 6).toFixed(4)})`);
 
       requestAnimationFrame(draw);
     }
@@ -171,4 +211,5 @@
   </script>
 
 </body>
+
 </html>
