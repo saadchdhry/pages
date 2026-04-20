@@ -1,38 +1,67 @@
 # TASK.md
 
-## Next tasks
+## Current task
 
-Two items, in order:
-
-1. **Persistent settings** — save user-adjusted values to `localStorage` so they survive page reload. Settings to persist:
-   - `stem` (slider value)
-   - `minTicks` visibility (toggle state)
-
-2. **Consolidate to one page** — delete `index.html` (the digital clock) and rename `analog.html` → `index.html`. Remove the tab link (the `•` dot at bottom-right that navigated between the two pages) since there is no longer a second page.
+**Fix the centre pip** — it is invisible on screen. Understand why, and implement a working solution.
 
 ---
 
-## Project
+## What was completed in the previous session
 
-Minimal static site on GitHub Pages. No build system, no dependencies. Single HTML files.
+1. **Persistent settings** ✅ — `stem` and `minTicks` are now saved to `localStorage` and restored on load.
+2. **Consolidate to one page** ✅ — `analog.html` renamed to `index.html`; old digital clock `index.html` deleted; `.tab` nav dot and all its CSS removed; `#minToggle` repositioned from `bottom: 70px` to `bottom: 24px` now that the tab is gone.
+
+---
+
+## The pip problem
+
+### What the pip is
+
+`<circle cx="0" cy="0" r="0.036" class="pip" />` — painted last (topmost layer) in the SVG. Its purpose is to cap the hand roots at the centre with a clean, readable circle — a standard watchmaking detail that hides the mechanical pivot.
+
+### Why it is invisible — root cause
+
+The entire clock uses `mix-blend-mode: difference; fill: white; stroke: white` on `.tick`, `.hand`, and `.pip`. This works well for ticks and hands because they blend against the background rect.
+
+The pip is painted on top of all three hands. All three hands always pass through the origin (their rotation pivot), so the backdrop at the pip's location is the composited result of three stacked difference-blended white elements. Stacked difference operations at the centre cycle the colour:
+
+```
+bg (dark ≈ 12)  →  hand 1: 255−12 = 243  →  hand 2: 255−243 = 12  →  hand 3: 255−12 = 243
+pip: 255 − 243 = 12  ≈  background colour  →  invisible
+```
+
+The pip cancels itself out against the composited hand stack beneath it. This is true regardless of `r` value — changing the radius does not fix it.
+
+### What was tried (did not work, changes discarded)
+
+- **`stroke: none` on `.pip`** — the pip was previously also suffering from SVG's default `stroke-width: 1` (= 1 full user unit in this coordinate space, enormous). Adding `stroke: none` fixed the stroke bloat but did not fix the blend-mode cancellation. The pip remained invisible.
+- **Explicit background-matching fill, no blend mode** — attempted removing `.pip` from the difference system and giving it `fill: #0c0c0c` (dark) / `fill: #f5f5f3` (light) via media queries, with `stroke: none`. This was discarded; the user wants a different approach.
+
+### What is known and agreed
+
+- The pip's `stroke` must be `none` (or an explicit small value) — the default SVG `stroke-width: 1` in this coordinate space is half the clock width, which is wrong.
+- The pip needs to be **visible** and render as a distinct circle at the centre.
+- The pip size target: `r = lollipop_r × (1 + PHI²) = 0.040 × 3.618 ≈ 0.145` — large enough to visually cap and extend beyond the lollipop circle on the second hand.
+- The fix must work in both dark and light colour schemes.
+
+---
+
+## Project state (current `index.html`)
+
+### File structure
 
 ```
 github-pages/
-├── analog.html         ← becomes index.html (rename, delete old index)
-├── index.html          ← digital clock — DELETE
+├── index.html          ← the clock (was analog.html)
 ├── favicon.png
 └── docs/
     ├── sitemap.md
     └── architecture-analog.md
 ```
 
----
-
-## `analog.html` — current state (as of last session)
-
 ### SVG coordinate system
 
-`viewBox="-1 -1 2 2"`. Origin at centre. All geometry in normalised `−1 → +1` space. Clock element is sized `min(70vw, 70vh)` with `border-radius: 50%` (clips the square SVG to a circle — eliminates the square bounding box artefact caused by isolated blend mode compositing).
+`viewBox="-1 -1 2 2"`. Origin at centre. All geometry in normalised `−1 → +1` space. Clock element is `min(70vw, 70vh)` with `border-radius: 50%`.
 
 ### Layer order (paint order)
 
@@ -48,14 +77,14 @@ github-pages/
 
 ### Blend mode
 
-All `.tick`, `.hand`, `.pip` use `mix-blend-mode: difference; fill: white; stroke: white`. Hands additionally have `stroke: none` to prevent SVG's default `stroke-width: 1` (= enormous in this coordinate space) from dominating. The `<rect class="bg">` provides a stable base for all blend calculations.
+`.tick`, `.hand` use `mix-blend-mode: difference; fill: white; stroke: white`. `.hand` additionally has `stroke: none`. The `<rect class="bg">` provides a stable base.
 
 ### Design constants (JS)
 
 ```js
 const PHI  = (1 + Math.sqrt(5)) / 2;   // φ ≈ 1.618
 let   stem = 0.005;                     // universal base dimension — slider-controlled
-let   sW, mW, hW;                       // derived widths, recomputed in updateWidths()
+let   sW, mW, hW;
 
 function updateWidths() {
   sW = stem;
@@ -64,54 +93,25 @@ function updateWidths() {
 }
 ```
 
-`stem` is the single master dimension. `sW/mW/hW` are the second/minute/hour hand widths, cascading by φ² each step (not φ — this was a deliberate design choice for more pronounced separation).
-
 ### Dimension table (at default `stem = 0.005`)
 
 | Element | Property | Value / Formula |
 |---|---|---|
 | Clock size | CSS | `min(70vw, 70vh)` |
-| Hour ticks (×12) | inner r | `0.860` |
-| Hour ticks (×12) | outer r | `0.940` |
-| Hour ticks (×12) | length | `0.080` |
 | Hour ticks (×12) | stroke-width | `mW` |
-| Minute ticks (×48) | inner r | `0.868` |
-| Minute ticks (×48) | outer r | `0.940` |
 | Minute ticks (×48) | stroke-width | `sW` |
-| Hour hand | width | `hW` = `stem × φ⁴ ≈ 0.0343` |
-| Hour hand | tip | `−0.500` |
-| Hour hand | tail | `+0.070` |
-| Minute hand | width | `mW` = `stem × φ² ≈ 0.0131` |
-| Minute hand | tip | `−0.755` |
-| Minute hand | tail | `+0.090` |
-| Second hand | width | `sW` = `stem = 0.005` |
-| Second hand | tip | `−0.862` |
-| Second hand | tail | `+0.090` |
-| Lollipop circle | cy | `0.210` |
-| Lollipop circle | r | `0.040` |
-| Centre pip | r | `0.036` (hardcoded — fixed, does not scale with stem) |
+| Hour hand | width | `hW = stem × φ⁴ ≈ 0.0343` |
+| Hour hand | tip / tail | `−0.500` / `+0.070` |
+| Minute hand | width | `mW = stem × φ² ≈ 0.0131` |
+| Minute hand | tip / tail | `−0.755` / `+0.090` |
+| Second hand | width | `sW = stem = 0.005` |
+| Second hand | tip / tail | `−0.862` / `+0.090` |
+| Lollipop circle | cy / r | `0.210` / `0.040` |
+| Centre pip | r | `0.036` (hardcoded — **target: 0.145**) |
 
-All ticks and hands use `stroke-linecap: round`. Hand rects use `rx = width/2` (pill/capsule ends).
-
-### UI controls
+### UI controls (current state)
 
 | Control | Position | Behaviour |
 |---|---|---|
-| `#stemSlider` | `fixed; bottom: 32px; left: 24px` | `input[type=range]` min=2 max=20 value=5 step=1; maps to `stem = value/1000`; calls `build()` on input |
-| `#minToggle` | `fixed; bottom: 70px; right: 24px` | Button; toggles `#minTicks` visibility; adds `.active` class when on |
-| `.tab` | `fixed; bottom: 24px; right: 24px` | Link to `index.html` — **DELETE when renaming analog → index** |
-
-All controls: `opacity: 0.18` idle, `0.55` on hover. `.active` state for `#minToggle`: `0.40`.
-
-### `build()` architecture
-
-Changing `stem` (via slider) calls `build()`, which:
-1. `updateWidths()` — recomputes `sW/mW/hW`
-2. `buildTicks()` — clears and regenerates both tick groups
-3. `buildHands()` — clears and regenerates hand children (rotation `transform` on `<g>` is preserved)
-
-Animation runs independently via `requestAnimationFrame`, updating only `transform="rotate(...)"` on the hand groups each frame.
-
-### Settings not yet persistent
-
-`stem` and `minTicks` toggle state reset on every page load. **This is task 1.**
+| `#stemSlider` | `fixed; bottom: 32px; left: 24px` | min=2 max=20 step=1; `stem = value/1000`; persisted to `localStorage` |
+| `#minToggle` | `fixed; bottom: 24px; right: 24px` | Toggles `#minTicks` visibility; persisted to `localStorage` |
