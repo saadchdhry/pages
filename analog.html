@@ -109,6 +109,20 @@
     #minToggle:hover  { opacity: 0.55; }
     #minToggle.active { opacity: 0.40; }
 
+    /* ── Stem slider ── */
+    #stemSlider {
+      position: fixed;
+      bottom: 32px;
+      left: 24px;
+      width: 80px;
+      opacity: 0.18;
+      transition: opacity 0.2s ease;
+      cursor: pointer;
+    }
+    #stemSlider:hover { opacity: 0.55; }
+    @media (prefers-color-scheme: dark)  { #stemSlider { accent-color: #f0f0f0; } }
+    @media (prefers-color-scheme: light) { #stemSlider { accent-color: #111111; } }
+
     @media (prefers-color-scheme: dark) {
       .tab {
         color: #f0f0f0;
@@ -148,6 +162,9 @@
 
   </svg>
 
+  <!-- Stem slider: controls universal base stroke width -->
+  <input type="range" id="stemSlider" min="2" max="20" value="5" step="1" aria-label="Stroke weight">
+
   <!-- Toggle: show/hide minute tick markers -->
   <button id="minToggle" aria-label="Toggle minute markers">
     <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
@@ -167,31 +184,41 @@
 
   <script>
     // ─── Design constants ──────────────────────────────────────────
-    const PHI = (1 + Math.sqrt(5)) / 2;   // φ ≈ 1.618 (golden ratio)
-    const sW  = 0.005;
-    const mW  = sW * PHI;                 // sW × φ
-    const hW  = mW * PHI;                 // sW × φ²
+    const PHI  = (1 + Math.sqrt(5)) / 2;   // φ ≈ 1.618 (golden ratio)
+    let   stem = 0.005;                     // universal base dimension → driven by slider
+    let   sW, mW, hW;
+
+    function updateWidths() {
+      sW = stem;
+      mW = stem * PHI;        // stem × φ
+      hW = stem * PHI * PHI;  // stem × φ²
+    }
 
     // ─── Tick marks ────────────────────────────────────────────────
     const ticksEl    = document.getElementById('ticks');
     const minTicksEl = document.getElementById('minTicks');
 
-    for (let i = 0; i < 60; i++) {
-      const major  = (i % 5 === 0);
-      const a      = i * 6 * Math.PI / 180;
-      const r0     = major ? 0.860 : 0.868;
-      const sw     = major ? mW : sW;         // hour markers → mW; minute markers → sW
-      const target = major ? ticksEl : minTicksEl;
+    function buildTicks() {
+      ticksEl.innerHTML    = '';
+      minTicksEl.innerHTML = '';
 
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', ( Math.sin(a) * r0).toFixed(5));
-      line.setAttribute('y1', (-Math.cos(a) * r0).toFixed(5));
-      line.setAttribute('x2', ( Math.sin(a) * 0.940).toFixed(5));
-      line.setAttribute('y2', (-Math.cos(a) * 0.940).toFixed(5));
-      line.setAttribute('stroke-width',   sw);
-      line.setAttribute('stroke-linecap', 'round');
-      line.classList.add('tick');
-      target.appendChild(line);
+      for (let i = 0; i < 60; i++) {
+        const major  = (i % 5 === 0);
+        const a      = i * 6 * Math.PI / 180;
+        const r0     = major ? 0.860 : 0.868;
+        const sw     = major ? mW : sW;         // hour markers → mW; minute markers → sW
+        const target = major ? ticksEl : minTicksEl;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', ( Math.sin(a) * r0).toFixed(5));
+        line.setAttribute('y1', (-Math.cos(a) * r0).toFixed(5));
+        line.setAttribute('x2', ( Math.sin(a) * 0.940).toFixed(5));
+        line.setAttribute('y2', (-Math.cos(a) * 0.940).toFixed(5));
+        line.setAttribute('stroke-width',   sw);
+        line.setAttribute('stroke-linecap', 'round');
+        line.classList.add('tick');
+        target.appendChild(line);
+      }
     }
 
     // ─── Hand builders ─────────────────────────────────────────────
@@ -211,36 +238,41 @@
       return el;
     }
 
-    // Hour — widest (hW = sW × φ²), short, small counterweight
-    document.getElementById('hHand').appendChild(
-      mkRect(-hW/2, -0.500, hW, 0.570, hW/2)   // tip at -0.500, tail at +0.070
-    );
+    const hHandEl = document.getElementById('hHand');
+    const mHandEl = document.getElementById('mHand');
+    const sHandEl = document.getElementById('sHand');
 
-    // Minute — medium (mW = sW × φ), longer
-    document.getElementById('mHand').appendChild(
-      mkRect(-mW/2, -0.755, mW, 0.845, mW/2)   // tip at -0.755, tail at +0.090
-    );
+    function buildHands() {
+      hHandEl.innerHTML = '';
+      mHandEl.innerHTML = '';
+      sHandEl.innerHTML = '';
 
-    // Second — thinnest (sW), + Bauhaus lollipop counterweight
-    const sEl = document.getElementById('sHand');
-    sEl.appendChild(mkRect(-sW/2, -0.862, sW, 0.952, sW/2));  // tip -0.862, tail +0.090
-    sEl.appendChild(mkCircle(0, 0.210, 0.040));                // lollipop circle
+      hHandEl.appendChild(mkRect(-hW/2, -0.500, hW, 0.570, hW/2));  // tip -0.500, tail +0.070
+      mHandEl.appendChild(mkRect(-mW/2, -0.755, mW, 0.845, mW/2));  // tip -0.755, tail +0.090
+      sHandEl.appendChild(mkRect(-sW/2, -0.862, sW, 0.952, sW/2));  // tip -0.862, tail +0.090
+      sHandEl.appendChild(mkCircle(0, 0.210, 0.040));                // lollipop circle
+    }
+
+    // ─── Build (called on load and on slider change) ───────────────
+    function build() {
+      updateWidths();
+      buildTicks();
+      buildHands();
+    }
+
+    build();
 
     // ─── Smooth animation via requestAnimationFrame ─────────────────
-    const hG = document.getElementById('hHand');
-    const mG = document.getElementById('mHand');
-    const sG = document.getElementById('sHand');
-
     function draw() {
       const now = new Date();
-      const ms = now.getMilliseconds();
-      const s = now.getSeconds() + ms / 1000;
-      const m = now.getMinutes() + s / 60;
-      const h = (now.getHours() % 12) + m / 60;
+      const ms  = now.getMilliseconds();
+      const s   = now.getSeconds()      + ms / 1000;
+      const m   = now.getMinutes()      + s  / 60;
+      const h   = (now.getHours() % 12) + m  / 60;
 
-      hG.setAttribute('transform', `rotate(${(h * 30).toFixed(4)})`);
-      mG.setAttribute('transform', `rotate(${(m * 6).toFixed(4)})`);
-      sG.setAttribute('transform', `rotate(${(s * 6).toFixed(4)})`);
+      hHandEl.setAttribute('transform', `rotate(${(h * 30).toFixed(4)})`);
+      mHandEl.setAttribute('transform', `rotate(${(m *  6).toFixed(4)})`);
+      sHandEl.setAttribute('transform', `rotate(${(s *  6).toFixed(4)})`);
 
       requestAnimationFrame(draw);
     }
@@ -252,6 +284,12 @@
       const visible = minTicksEl.style.display !== 'none';
       minTicksEl.style.display = visible ? 'none' : '';
       this.classList.toggle('active', !visible);
+    });
+
+    // ─── Stem slider ──────────────────────────────────────────────
+    document.getElementById('stemSlider').addEventListener('input', function () {
+      stem = this.value / 1000;
+      build();
     });
   </script>
 
