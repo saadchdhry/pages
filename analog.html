@@ -89,6 +89,26 @@
       opacity: 0.55;
     }
 
+    /* ── Minute tick toggle ── */
+    #minToggle {
+      position: fixed;
+      bottom: 70px;
+      right: 24px;
+      width: 36px;
+      height: 36px;
+      opacity: 0.18;
+      transition: opacity 0.2s ease;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #minToggle:hover  { opacity: 0.55; }
+    #minToggle.active { opacity: 0.40; }
+
     @media (prefers-color-scheme: dark) {
       .tab {
         color: #f0f0f0;
@@ -110,8 +130,11 @@
     <!-- Solid background so blend modes have a known base -->
     <rect x="-1" y="-1" width="2" height="2" class="bg" />
 
-    <!-- 60 tick marks, generated below -->
+    <!-- 12 hour tick marks, generated below -->
     <g id="ticks"></g>
+
+    <!-- 48 minute tick marks (toggleable), hidden by default -->
+    <g id="minTicks" style="display:none"></g>
 
     <!-- Hands — rendered in z-order: hour → minute → second
          Each hand blends against the composited backdrop below it,
@@ -124,6 +147,16 @@
     <circle cx="0" cy="0" r="0.036" class="pip" />
 
   </svg>
+
+  <!-- Toggle: show/hide minute tick markers -->
+  <button id="minToggle" aria-label="Toggle minute markers">
+    <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
+      <line x1="0"     y1="-0.62" x2="0"     y2="-0.90" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+      <line x1="0.62"  y1="0"     x2="0.90"  y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+      <line x1="0"     y1="0.62"  x2="0"     y2="0.90"  stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+      <line x1="-0.62" y1="0"     x2="-0.90" y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+    </svg>
+  </button>
 
   <!-- Tab: dot → back to digital -->
   <a href="index.html" class="tab" aria-label="Digital clock">
@@ -140,21 +173,25 @@
     const hW  = mW * PHI;                 // sW × φ²
 
     // ─── Tick marks ────────────────────────────────────────────────
-    const ticksEl = document.getElementById('ticks');
+    const ticksEl    = document.getElementById('ticks');
+    const minTicksEl = document.getElementById('minTicks');
 
     for (let i = 0; i < 60; i++) {
-      if (i % 5 !== 0) continue;             // hour positions only; minute ticks removed
-      const a = i * 6 * Math.PI / 180;
+      const major  = (i % 5 === 0);
+      const a      = i * 6 * Math.PI / 180;
+      const r0     = major ? 0.860 : 0.868;
+      const sw     = major ? mW : sW;         // hour markers → mW; minute markers → sW
+      const target = major ? ticksEl : minTicksEl;
 
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', ( Math.sin(a) * 0.860).toFixed(5));
-      line.setAttribute('y1', (-Math.cos(a) * 0.860).toFixed(5));
+      line.setAttribute('x1', ( Math.sin(a) * r0).toFixed(5));
+      line.setAttribute('y1', (-Math.cos(a) * r0).toFixed(5));
       line.setAttribute('x2', ( Math.sin(a) * 0.940).toFixed(5));
       line.setAttribute('y2', (-Math.cos(a) * 0.940).toFixed(5));
-      line.setAttribute('stroke-width',   hW);  // matches hour hand width
+      line.setAttribute('stroke-width',   sw);
       line.setAttribute('stroke-linecap', 'round');
       line.classList.add('tick');
-      ticksEl.appendChild(line);
+      target.appendChild(line);
     }
 
     // ─── Hand builders ─────────────────────────────────────────────
@@ -209,6 +246,13 @@
     }
 
     draw();
+
+    // ─── Minute tick toggle ────────────────────────────────────────
+    document.getElementById('minToggle').addEventListener('click', function () {
+      const visible = minTicksEl.style.display !== 'none';
+      minTicksEl.style.display = visible ? 'none' : '';
+      this.classList.toggle('active', !visible);
+    });
   </script>
 
 </body>
