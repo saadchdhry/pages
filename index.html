@@ -74,6 +74,25 @@
       letter-spacing: 0.25em;
       text-transform: uppercase;
     }
+
+    /* ── Tab ── */
+    .tab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 36px;
+      height: 36px;
+      opacity: 0.18;
+      transition: opacity 0.2s ease;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tab:hover { opacity: 0.55; }
+
+    @media (prefers-color-scheme: dark)  { .tab { color: #f0f0f0; } }
+    @media (prefers-color-scheme: light) { .tab { color: #111111; } }
   </style>
 </head>
 <body>
@@ -83,6 +102,12 @@
     <span class="secs" id="secs">00</span>
   </div>
   <div class="date" id="date">Monday, Apr 20</div>
+
+  <a href="analog.html" class="tab" aria-label="Analog clock">
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+      <circle cx="18" cy="18" r="11" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+  </a>
 
   <script>
     const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
