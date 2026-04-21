@@ -2,57 +2,17 @@
 
 ## Current task
 
-**Fix the centre pip** — it is invisible on screen. Understand why, and implement a working solution.
+**Hour tick animation** — when the second hand sweeps past an hour marker tick, that tick briefly rotates around its own axis (a "nudge" or "spin" effect).
 
 ---
 
-## What was completed in the previous session
-
-1. **Persistent settings** ✅ — `stem` and `minTicks` are now saved to `localStorage` and restored on load.
-2. **Consolidate to one page** ✅ — `analog.html` renamed to `index.html`; old digital clock `index.html` deleted; `.tab` nav dot and all its CSS removed; `#minToggle` repositioned from `bottom: 70px` to `bottom: 24px` now that the tab is gone.
-
----
-
-## The pip problem
-
-### What the pip is
-
-`<circle cx="0" cy="0" r="0.036" class="pip" />` — painted last (topmost layer) in the SVG. Its purpose is to cap the hand roots at the centre with a clean, readable circle — a standard watchmaking detail that hides the mechanical pivot.
-
-### Why it is invisible — root cause
-
-The entire clock uses `mix-blend-mode: difference; fill: white; stroke: white` on `.tick`, `.hand`, and `.pip`. This works well for ticks and hands because they blend against the background rect.
-
-The pip is painted on top of all three hands. All three hands always pass through the origin (their rotation pivot), so the backdrop at the pip's location is the composited result of three stacked difference-blended white elements. Stacked difference operations at the centre cycle the colour:
-
-```
-bg (dark ≈ 12)  →  hand 1: 255−12 = 243  →  hand 2: 255−243 = 12  →  hand 3: 255−12 = 243
-pip: 255 − 243 = 12  ≈  background colour  →  invisible
-```
-
-The pip cancels itself out against the composited hand stack beneath it. This is true regardless of `r` value — changing the radius does not fix it.
-
-### What was tried (did not work, changes discarded)
-
-- **`stroke: none` on `.pip`** — the pip was previously also suffering from SVG's default `stroke-width: 1` (= 1 full user unit in this coordinate space, enormous). Adding `stroke: none` fixed the stroke bloat but did not fix the blend-mode cancellation. The pip remained invisible.
-- **Explicit background-matching fill, no blend mode** — attempted removing `.pip` from the difference system and giving it `fill: #0c0c0c` (dark) / `fill: #f5f5f3` (light) via media queries, with `stroke: none`. This was discarded; the user wants a different approach.
-
-### What is known and agreed
-
-- The pip's `stroke` must be `none` (or an explicit small value) — the default SVG `stroke-width: 1` in this coordinate space is half the clock width, which is wrong.
-- The pip needs to be **visible** and render as a distinct circle at the centre.
-- The pip size target: `r = lollipop_r × (1 + PHI²) = 0.040 × 3.618 ≈ 0.145` — large enough to visually cap and extend beyond the lollipop circle on the second hand.
-- The fix must work in both dark and light colour schemes.
-
----
-
-## Project state (current `index.html`)
+## Project state
 
 ### File structure
 
 ```
 github-pages/
-├── index.html          ← the clock (was analog.html)
+├── index.html          ← the clock (single page)
 ├── favicon.png
 └── docs/
     ├── sitemap.md
@@ -67,17 +27,20 @@ github-pages/
 
 ```
 <rect class="bg"/>          ← background fill — stable blend mode base
+<circle class="pip"/>       ← centre pip, r=0.35 — rendered BELOW everything else
 <g id="ticks"/>             ← 12 hour tick marks (generated in JS)
 <g id="minTicks"/>          ← 48 minute tick marks (toggleable, hidden by default)
 <g id="hHand"/>             ← hour hand
 <g id="mHand"/>             ← minute hand
 <g id="sHand"/>             ← second hand + lollipop circle
-<circle id="pip"/>          ← centre pip, painted last
 ```
+
+**Pip is at the bottom** — this was a deliberate fix. The pip was previously topmost and invisible due to `mix-blend-mode: difference` cancellation from three stacked hands. Moving it just above `<rect class="bg">` means it blends only against the background, making it reliably visible in both dark and light modes.
 
 ### Blend mode
 
-`.tick`, `.hand` use `mix-blend-mode: difference; fill: white; stroke: white`. `.hand` additionally has `stroke: none`. The `<rect class="bg">` provides a stable base.
+`.tick`, `.hand`, `.pip` all use `mix-blend-mode: difference; fill: white; stroke: white`.
+`.hand` and `.pip` additionally have `stroke: none` (prevents default SVG stroke-width: 1, which equals half the clock width in this coordinate space).
 
 ### Design constants (JS)
 
@@ -93,25 +56,68 @@ function updateWidths() {
 }
 ```
 
+### Tick geometry (current state)
+
+```js
+const tickOuter  = 0.940;
+const majorInner = 0.860;
+const majorLen   = tickOuter - majorInner;              // 0.080
+const minorInner = tickOuter - majorLen / (PHI * PHI);  // majorLen ÷ φ² ≈ 0.909
+```
+
+Minor tick length = major tick length ÷ φ² — this is a deliberate PHI relationship introduced in the last session.
+
 ### Dimension table (at default `stem = 0.005`)
 
 | Element | Property | Value / Formula |
 |---|---|---|
 | Clock size | CSS | `min(70vw, 70vh)` |
-| Hour ticks (×12) | stroke-width | `mW` |
-| Minute ticks (×48) | stroke-width | `sW` |
-| Hour hand | width | `hW = stem × φ⁴ ≈ 0.0343` |
+| Hour ticks (×12) | stroke-width | `mW = stem × φ²` |
+| Minute ticks (×48) | stroke-width | `sW = stem` |
+| Major tick length | geometry | `0.080` (hardcoded) |
+| Minor tick length | geometry | `majorLen ÷ φ²` ≈ 0.031 |
+| Hour hand | width | `hW = stem × φ⁴ ≈ 0.034` |
 | Hour hand | tip / tail | `−0.500` / `+0.070` |
-| Minute hand | width | `mW = stem × φ² ≈ 0.0131` |
+| Minute hand | width | `mW = stem × φ² ≈ 0.013` |
 | Minute hand | tip / tail | `−0.755` / `+0.090` |
 | Second hand | width | `sW = stem = 0.005` |
 | Second hand | tip / tail | `−0.862` / `+0.090` |
 | Lollipop circle | cy / r | `0.210` / `0.040` |
-| Centre pip | r | `0.036` (hardcoded — **target: 0.145**) |
+| Centre pip | r | `0.35` |
 
-### UI controls (current state)
+### UI controls
 
 | Control | Position | Behaviour |
 |---|---|---|
 | `#stemSlider` | `fixed; bottom: 32px; left: 24px` | min=2 max=20 step=1; `stem = value/1000`; persisted to `localStorage` |
 | `#minToggle` | `fixed; bottom: 24px; right: 24px` | Toggles `#minTicks` visibility; persisted to `localStorage` |
+
+---
+
+## The animation task
+
+### Effect description
+
+Every time the second hand sweeps past an hour marker tick, that tick briefly **rotates around its own radial axis** — a subtle mechanical "nudge" as if the hand physically disturbed it.
+
+- The second hand completes one rotation per 60 seconds
+- There are 12 hour markers at 0°, 30°, 60°, 90°, 120°, 150°, 180°, 210°, 240°, 270°, 300°, 330°
+- The second hand passes each hour marker once every 5 seconds
+
+### What "rotates around its own axis" means
+
+The tick is a radial line segment. Rotating it around its own axis means it **spins around its own midpoint** — the line stays in place but flips/rotates, like a needle spinning on its centre pin.
+
+### Implementation considerations
+
+1. **Trigger detection** — in the `draw()` RAF loop, compare the second hand's current angle against each hour tick's angle. Fire when they coincide (within a small threshold, or on the exact integer-second crossing).
+
+2. **Tick element identity** — hour ticks are currently generated anonymously in `buildTicks()`. Each needs a stable reference (e.g. `data-hour="N"` or individual `id`) so the animation can be targeted per tick.
+
+3. **Animation mechanism** — SVG `transform` rotate on the tick's own centre point. Options:
+   - CSS `@keyframes` class toggled via JS (clean, GPU-accelerated)
+   - JS-driven `setAttribute('transform', ...)` in the RAF loop (more control but more code)
+
+4. **Blend mode** — the tick uses `mix-blend-mode: difference`. The animation must not break this. A CSS animation on `transform` is safe; avoid animating `fill` or `opacity` which would interact with the blend mode unexpectedly.
+
+5. **One-shot trigger** — the animation should fire once per pass, not loop continuously while the hand overlaps. Use a "fired" flag or compare with the previous frame's angle to detect the crossing edge.

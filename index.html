@@ -167,18 +167,23 @@
       ticksEl.innerHTML    = '';
       minTicksEl.innerHTML = '';
 
+      const tickOuter  = 0.940;
+      const majorInner = 0.860;
+      const majorLen   = tickOuter - majorInner;              // 0.080
+      const minorInner = tickOuter - majorLen / (PHI * PHI);  // majorLen ÷ φ²
+
       for (let i = 0; i < 60; i++) {
         const major  = (i % 5 === 0);
         const a      = i * 6 * Math.PI / 180;
-        const r0     = major ? 0.860 : 0.868;
+        const r0     = major ? majorInner : minorInner;
         const sw     = major ? mW : sW;         // hour markers → mW; minute markers → sW
         const target = major ? ticksEl : minTicksEl;
 
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('x1', ( Math.sin(a) * r0).toFixed(5));
         line.setAttribute('y1', (-Math.cos(a) * r0).toFixed(5));
-        line.setAttribute('x2', ( Math.sin(a) * 0.940).toFixed(5));
-        line.setAttribute('y2', (-Math.cos(a) * 0.940).toFixed(5));
+        line.setAttribute('x2', ( Math.sin(a) * tickOuter).toFixed(5));
+        line.setAttribute('y2', (-Math.cos(a) * tickOuter).toFixed(5));
         line.setAttribute('stroke-width',   sw);
         line.setAttribute('stroke-linecap', 'round');
         line.classList.add('tick');
