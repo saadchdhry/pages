@@ -74,6 +74,30 @@
       will-change: transform;
     }
 
+    /* ── FPS toggle ── */
+    #fpsToggle {
+      position: fixed;
+      bottom: 72px;
+      right: 24px;
+      width: 36px;
+      height: 36px;
+      opacity: 0.18;
+      transition: opacity 0.2s ease;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-family: monospace;
+      letter-spacing: 0;
+      color: currentColor;
+    }
+    #fpsToggle:hover  { opacity: 0.55; }
+    #fpsToggle.slow   { opacity: 0.40; }
+
     /* ── Minute tick toggle ── */
     #minToggle {
       position: fixed;
@@ -130,6 +154,8 @@
   </svg>
 
   <input type="range" id="stemSlider" min="2" max="20" value="5" step="1" aria-label="Stroke weight">
+
+  <button id="fpsToggle" aria-label="Toggle frame rate">30</button>
 
   <button id="minToggle" aria-label="Toggle minute markers">
     <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
@@ -240,9 +266,10 @@
 
     build();
 
-    // ─── Animation loop — capped at 30 FPS ─────────────────────────
-    const FRAME_MS = 1000 / 30;
-    let lastDraw = 0;
+    // ─── Animation loop ────────────────────────────────────────────
+    let targetFps = parseInt(localStorage.getItem('fps') ?? '30', 10);
+    let FRAME_MS  = 1000 / targetFps;
+    let lastDraw  = 0;
 
     function draw(ts) {
       requestAnimationFrame(draw);
@@ -270,6 +297,23 @@
       minTicksEl.style.display = visible ? 'none' : '';
       this.classList.toggle('active', !visible);
       localStorage.setItem('minTicks', !visible);
+    });
+
+    // ─── FPS toggle ────────────────────────────────────────────────
+    const fpsToggleEl = document.getElementById('fpsToggle');
+
+    function applyFps(fps) {
+      targetFps       = fps;
+      FRAME_MS        = 1000 / fps;
+      fpsToggleEl.textContent = fps;
+      fpsToggleEl.classList.toggle('slow', fps === 1);
+      localStorage.setItem('fps', fps);
+    }
+
+    applyFps(targetFps);
+
+    fpsToggleEl.addEventListener('click', function () {
+      applyFps(targetFps === 30 ? 1 : 30);
     });
 
     // ─── Stem slider ───────────────────────────────────────────────
