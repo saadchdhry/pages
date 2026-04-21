@@ -1,4 +1,4 @@
-# Architecture — Analog Clock (`analog.html`)
+# Architecture — Analog Clock (`index.html`)
 
 ## Technical Architecture
 
@@ -8,7 +8,7 @@ Single self-contained HTML file; no external dependencies, no build step. Markup
 
 ### Coordinate system
 
-The SVG uses `viewBox="-1 -1 2 2"`, placing the origin at the canvas centre. All geometry is in normalised `−1 → +1` space; the outer tick ring sits at radius `0.94`. Sized `min(70vw, 70vh)`, the clock scales to any viewport without coordinate changes.
+The SVG uses `viewBox="-1 -1 2 2"`, placing the origin at the canvas centre. All geometry is in normalised `−1 → +1` space; the outer tick ring sits at radius `0.940`. Sized `min(70vw, 70vh)`, the clock scales to any viewport without coordinate changes.
 
 ### SVG layer order
 
@@ -16,14 +16,15 @@ DOM order determines paint order (later = on top):
 
 ```
 <rect class="bg"/>        ← 1. Background fill (known, stable base for blend modes)
-<g id="ticks"/>           ← 2. Tick marks
-<g id="hHand"/>           ← 3. Hour hand
-<g id="mHand"/>           ← 4. Minute hand
-<g id="sHand"/>           ← 5. Second hand  (includes lollipop circle)
-<circle class="pip"/>     ← 6. Centre pip
+<circle class="pip"/>     ← 2. Centre pip — below hands so it blends only against bg
+<g id="ticks"/>           ← 3. Hour tick marks (+ calendar markers)
+<g id="minTicks"/>        ← 4. Minute tick marks (toggleable, hidden by default)
+<g id="hHand"/>           ← 5. Hour hand
+<g id="mHand"/>           ← 6. Minute hand
+<g id="sHand"/>           ← 7. Second hand (includes lollipop circle)
 ```
 
-Each layer blends against the full composited stack below it. The background `<rect>` gives every blend operation a known, stable base; without it the blend targets the `body` background, which varies across browsers.
+The pip sits just above the background so it blends only against the background fill, making it reliably visible in both light and dark modes. Placing it above the hands caused it to cancel out under three stacked `difference` layers.
 
 ### Blend mode mechanics
 
@@ -35,42 +36,65 @@ fill: white;
 stroke: white;
 ```
 
-`difference` computes `|source − destination|` per channel. On a near-black background (~`0.05`), white reads as near-white; on a near-white background (~`0.96`), it reads as near-black. Where hands overlap, each successive layer inverts the rendered colour of whatever lies below it.
+`difference` computes `|source − destination|` per channel. On a near-black background (`#0c0c0c`), white reads as near-white; on a near-white background (`#f5f5f3`), it reads as near-black. Where hands overlap, each successive layer inverts the rendered colour of whatever lies below it.
+
+### Design constants
+
+```js
+const PHI  = (1 + Math.sqrt(5)) / 2;   // φ ≈ 1.618 — golden ratio
+let   stem = 0.005;                     // universal base dimension, slider-controlled
+
+sW = stem;                              // second hand / minor tick width
+mW = stem * PHI * PHI;                 // minute hand / major tick width  ≈ 0.013
+hW = stem * PHI * PHI * PHI * PHI;    // hour hand width                 ≈ 0.034
+```
+
+All stroke widths and many proportions derive from `stem` and `PHI`, so the entire clock rescales harmonically when the slider is moved.
 
 ### Tick mark generation
 
-60 tick marks are generated at page load. For each position, `a = i × 6°` is converted to radians and endpoints computed:
+Generated at page load (and on slider change) inside `buildTicks()`. 60 positions total; `major = (i % 5 === 0)` selects the 12 hour markers.
 
-```javascript
-x = Math.sin(a) * radius
-y = −Math.cos(a) * radius   // −cos: at a=0 the line points toward −y (12 o'clock)
+```js
+const tickOuter  = 0.940;
+const majorInner = 0.860;   // major tick length = 0.080
+const minorInner = tickOuter - majorLen / (PHI * PHI);  // minor tick length ÷ φ²
 ```
 
-Major ticks (12, at `i % 5 === 0`): `r 0.780 → 0.940`, `stroke-width 0.026`. Minor ticks (48): `r 0.868 → 0.940`, `stroke-width 0.009`. All ends use `stroke-linecap: butt`.
+Endpoint formula — `−cos` puts position 0 at 12 o'clock:
+
+```js
+x = Math.sin(a) * radius
+y = −Math.cos(a) * radius
+```
 
 ### Hand geometry
 
-Hands are SVG `<rect>` elements, each centred on the origin with tip toward `−y`:
+Hands are SVG `<rect>` elements centred on the origin, tip toward `−y`:
 
 | Hand | Width | Tip (`y`) | Tail (`+y`) |
 |---|---|---|---|
-| Hour | 0.060 | −0.500 | +0.070 |
-| Minute | 0.036 | −0.755 | +0.090 |
-| Second | 0.014 | −0.862 | +0.090 |
+| Hour | `hW ≈ 0.034` | −0.500 | +0.070 |
+| Minute | `mW ≈ 0.013` | −0.755 | +0.090 |
+| Second | `sW = 0.005` | −0.862 | +0.090 |
 
-The second hand also carries a circle (`r = 0.040`) at `cy = 0.210` — the Bauhaus lollipop counterweight.
+The second hand also carries a circle (`r = 0.040`) at `cy = 0.210` — the lollipop counterweight.
 
-### Animation
+### Animation and clock modes
 
-`requestAnimationFrame` calls `new Date()` every frame. Sub-unit remainders cascade so every hand moves continuously:
+Two modes, toggled by the `#fpsToggle` button and persisted to `localStorage` key `'fps'`:
 
-```javascript
-const s  = now.getSeconds()      + ms / 1000;
-const m  = now.getMinutes()      + s  / 60;
-const h  = (now.getHours() % 12) + m  / 60;
+**Continuous (30 FPS):** fractional seconds (`getSeconds() + ms/1000`) cascade through minute and hour, giving every hand a perfectly smooth sweep. `requestAnimationFrame` is throttled to 30 FPS via a timestamp delta.
+
+**Ticking (1 FPS):** `getSeconds()` (integer) snaps the second hand to each marker position. On page load, a startup sweep animates all hands from 12:00 to their correct positions at 240 deg/sec before dropping to 1 FPS.
+
+```js
+const s = targetFps === 30
+            ? now.getSeconds() + ms / 1000   // continuous
+            : now.getSeconds();              // ticking — snaps to markers
 ```
 
-Angles: `s × 6°`, `m × 6°`, `h × 30°`. Each hand's `<g>` gets `transform="rotate(deg)"` around the origin every frame. The loop pauses automatically when the tab is hidden.
+The RAF loop uses `setAttribute('transform', 'rotate(deg)')` on each hand `<g>`, which rotates around the SVG origin (clock centre).
 
 ---
 
@@ -102,14 +126,18 @@ Four levels of visual weight, heaviest to lightest:
 
 `mix-blend-mode: difference` is the primary visual signature of the clock. Three effects arise from it:
 
-**Hand-on-hand inversion.** Where two hands cross, the upper inverts the lower's colour. In dark mode a white hand crossing another produces a black stripe — a crisp negative-space line. The effect cascades: the third hand crossing that point re-inverts toward white, creating layered depth that no flat rendering could produce.
+**Hand-on-hand inversion.** Where two hands cross, the upper inverts the lower's colour. In dark mode a white hand crossing another produces a black stripe — a crisp negative-space line.
 
-**Hand-on-tick inversion.** As hands sweep over tick marks, they invert them momentarily. In dark mode a white hand over a white tick causes the tick to briefly disappear (white − white = black). The face itself reacts, not just the hands.
+**Hand-on-tick inversion.** As hands sweep over tick marks, they invert them momentarily. In dark mode a white hand over a white tick causes the tick to briefly disappear (white − white = black). The face itself reacts to the hands.
 
-**Centre accumulation.** All three hands converge at the pip, which is painted last. It blends against the full accumulated inversion of three overlapping hands — a small region of high-contrast complexity that anchors the face.
+**Centre accumulation.** All three hands converge near the pip, which blends against the full accumulated inversion of overlapping hands — a small region of high-contrast complexity that anchors the face.
 
-### Proportional decisions
+### UI controls
 
-The clock occupies 70% of the shortest viewport dimension, leaving 15% breathing room on each side. Negative space is a compositional element; the clock sits in the screen rather than filling it.
+| Control | Position | Behaviour |
+|---|---|---|
+| `#stemSlider` | `fixed; bottom: 32px; left: 24px` | Adjusts stroke weight; persisted to `localStorage` |
+| `#minToggle` | `fixed; bottom: 24px; right: 24px` | Shows/hides 48 minute ticks; persisted |
+| `#fpsToggle` | `fixed; bottom: 72px; right: 24px` | Toggles continuous / ticking mode; full-circle vs broken-circle icon; persisted |
 
-Hand width diminishes by a strict ratio (hour → minute → second: 0.060, 0.036, 0.014). Length inverts this: each successive hand reaches closer to the tick ring, reinforcing that faster hands govern finer detail.
+All three controls render at 18% opacity, rising to 55% on hover, so they fade into the background when not in use.

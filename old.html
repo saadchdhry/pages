@@ -54,6 +54,9 @@
       border-radius: 50%;
     }
 
+    /* All clock elements use difference blending against white.
+       On dark bg:  white → appears white; white-on-white → inverts to black.
+       On light bg: white → appears near-black; overlaps re-invert.       */
     .tick,
     .hand,
     .pip {
@@ -62,37 +65,11 @@
       stroke: white;
     }
 
+    /* Hands are filled rects — stroke would default to 1 SVG user unit (enormous) */
     .hand,
     .pip {
       stroke: none;
     }
-
-    /* Hint the browser to promote each hand to its own compositor layer. */
-    #hHand,
-    #mHand,
-    #sHand {
-      will-change: transform;
-    }
-
-    /* ── FPS toggle ── */
-    #fpsToggle {
-      position: fixed;
-      bottom: 72px;
-      right: 24px;
-      width: 36px;
-      height: 36px;
-      opacity: 0.18;
-      transition: opacity 0.2s ease;
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #fpsToggle:hover   { opacity: 0.55; }
-    #fpsToggle.ticking { opacity: 0.40; }
 
     /* ── Minute tick toggle ── */
     #minToggle {
@@ -128,31 +105,39 @@
     @media (prefers-color-scheme: dark)  { #stemSlider { accent-color: #f0f0f0; } }
     @media (prefers-color-scheme: light) { #stemSlider { accent-color: #111111; } }
 
-  </style>
+</style>
 </head>
 
 <body>
 
   <svg id="clock" viewBox="-1 -1 2 2">
 
+    <!-- Solid background so blend modes have a known base -->
     <rect x="-1" y="-1" width="2" height="2" class="bg" />
 
+    <!-- Centre pip, rendered just above background so it blends only against bg -->
     <circle cx="0" cy="0" r="0.35" class="pip" />
 
+    <!-- 12 hour tick marks, generated below -->
     <g id="ticks"></g>
 
+    <!-- 48 minute tick marks (toggleable), hidden by default -->
     <g id="minTicks" style="display:none"></g>
 
+    <!-- Hands — rendered in z-order: hour → minute → second
+         Each hand blends against the composited backdrop below it,
+         so overlapping hands invert each other's rendered colour.   -->
     <g id="hHand"></g>
     <g id="mHand"></g>
     <g id="sHand"></g>
 
+
   </svg>
 
+  <!-- Stem slider: controls universal base stroke width -->
   <input type="range" id="stemSlider" min="2" max="20" value="5" step="1" aria-label="Stroke weight">
 
-  <button id="fpsToggle" aria-label="Toggle continuous / ticking mode"></button>
-
+  <!-- Toggle: show/hide minute tick markers -->
   <button id="minToggle" aria-label="Toggle minute markers">
     <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
       <line x1="0"     y1="-0.62" x2="0"     y2="-0.90" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
@@ -164,14 +149,14 @@
 
   <script>
     // ─── Design constants ──────────────────────────────────────────
-    const PHI  = (1 + Math.sqrt(5)) / 2;
-    let   stem = 0.005;
+    const PHI  = (1 + Math.sqrt(5)) / 2;   // φ ≈ 1.618 (golden ratio)
+    let   stem = 0.005;                     // universal base dimension → driven by slider
     let   sW, mW, hW;
 
     function updateWidths() {
       sW = stem;
-      mW = stem * PHI * PHI;
-      hW = stem * PHI * PHI * PHI * PHI;
+      mW = stem * PHI * PHI;              // stem × φ²
+      hW = stem * PHI * PHI * PHI * PHI;  // stem × φ⁴
     }
 
     // ─── Tick marks ────────────────────────────────────────────────
@@ -184,14 +169,14 @@
 
       const tickOuter  = 0.940;
       const majorInner = 0.860;
-      const majorLen   = tickOuter - majorInner;
-      const minorInner = tickOuter - majorLen / (PHI * PHI);
+      const majorLen   = tickOuter - majorInner;              // 0.080
+      const minorInner = tickOuter - majorLen / (PHI * PHI);  // majorLen ÷ φ²
 
       for (let i = 0; i < 60; i++) {
         const major  = (i % 5 === 0);
         const a      = i * 6 * Math.PI / 180;
         const r0     = major ? majorInner : minorInner;
-        const sw     = major ? mW : sW;
+        const sw     = major ? mW : sW;         // hour markers → mW; minute markers → sW
         const target = major ? ticksEl : minTicksEl;
 
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -232,20 +217,20 @@
       mHandEl.innerHTML = '';
       sHandEl.innerHTML = '';
 
-      hHandEl.appendChild(mkRect(-hW/2, -0.500, hW, 0.570, hW/2));
-      mHandEl.appendChild(mkRect(-mW/2, -0.755, mW, 0.845, mW/2));
-      sHandEl.appendChild(mkRect(-sW/2, -0.862, sW, 0.952, sW/2));
-      sHandEl.appendChild(mkCircle(0, 0.210, 0.040));
+      hHandEl.appendChild(mkRect(-hW/2, -0.500, hW, 0.570, hW/2));  // tip -0.500, tail +0.070
+      mHandEl.appendChild(mkRect(-mW/2, -0.755, mW, 0.845, mW/2));  // tip -0.755, tail +0.090
+      sHandEl.appendChild(mkRect(-sW/2, -0.862, sW, 0.952, sW/2));  // tip -0.862, tail +0.090
+      sHandEl.appendChild(mkCircle(0, 0.210, 0.040));                // lollipop circle
     }
 
-    // ─── Build ─────────────────────────────────────────────────────
+    // ─── Build (called on load and on slider change) ───────────────
     function build() {
       updateWidths();
       buildTicks();
       buildHands();
     }
 
-    // ─── Restore persisted settings ────────────────────────────────
+    // ─── Restore persisted settings ───────────────────────────────────
     const slider = document.getElementById('stemSlider');
 
     const savedStem = localStorage.getItem('stem');
@@ -262,61 +247,22 @@
 
     build();
 
-    // ─── Clock mode & animation loop ──────────────────────────────
-    // Clock mode (continuous / ticking) is the governing factor; FPS follows.
-    // On page load in ticking mode a startup sweep runs at 30 FPS, animating
-    // all hands from 12:00 to their correct positions, then drops to 1 FPS.
-
-    const ANIM_SPEED = 240;  // deg/sec during startup sweep (~1.5 s worst-case)
-
-    let targetFps = parseInt(localStorage.getItem('fps') ?? '30', 10);
-    let FRAME_MS  = 1000 / 30;  // always start at 30 FPS; may drop after sweep
-    // Initialise to now so the first RAF dt is ~5–15 ms, not "time since navigation".
-    let lastDraw  = performance.now();
-
-    // Per-hand animated and target angles for startup sweep
-    let startupAnim = false;
-    let animS = 0, animM = 0, animH = 0;
-    let animTargetS = 0, animTargetM = 0, animTargetH = 0;
-
-    function draw(ts) {
-      requestAnimationFrame(draw);
-
-      if (ts - lastDraw < FRAME_MS) return;
-      // Cap dt so a hidden-then-restored tab can't skip the animation.
-      const dt = Math.min((ts - lastDraw) / 1000, 0.1);
-      lastDraw = ts;
-
-      if (startupAnim) {
-        animS = Math.min(animS + ANIM_SPEED * dt, animTargetS);
-        animM = Math.min(animM + ANIM_SPEED * dt, animTargetM);
-        animH = Math.min(animH + ANIM_SPEED * dt, animTargetH);
-
-        hHandEl.setAttribute('transform', `rotate(${animH.toFixed(3)})`);
-        mHandEl.setAttribute('transform', `rotate(${animM.toFixed(3)})`);
-        sHandEl.setAttribute('transform', `rotate(${animS.toFixed(3)})`);
-
-        if (animS >= animTargetS && animM >= animTargetM && animH >= animTargetH) {
-          startupAnim = false;
-          FRAME_MS    = 1000 / targetFps;  // drop to 1 FPS
-        }
-        return;
-      }
-
+    // ─── Smooth animation via requestAnimationFrame ─────────────────
+    function draw() {
       const now = new Date();
       const ms  = now.getMilliseconds();
-      const s   = targetFps === 30
-                    ? now.getSeconds() + ms / 1000
-                    : now.getSeconds();
+      const s   = now.getSeconds()      + ms / 1000;
       const m   = now.getMinutes()      + s  / 60;
       const h   = (now.getHours() % 12) + m  / 60;
 
-      hHandEl.setAttribute('transform', `rotate(${(h * 30).toFixed(3)})`);
-      mHandEl.setAttribute('transform', `rotate(${(m *  6).toFixed(3)})`);
-      sHandEl.setAttribute('transform', `rotate(${(s *  6).toFixed(3)})`);
+      hHandEl.setAttribute('transform', `rotate(${(h * 30).toFixed(4)})`);
+      mHandEl.setAttribute('transform', `rotate(${(m *  6).toFixed(4)})`);
+      sHandEl.setAttribute('transform', `rotate(${(s *  6).toFixed(4)})`);
+
+      requestAnimationFrame(draw);
     }
 
-    requestAnimationFrame(draw);
+    draw();
 
     // ─── Minute tick toggle ────────────────────────────────────────
     document.getElementById('minToggle').addEventListener('click', function () {
@@ -326,49 +272,7 @@
       localStorage.setItem('minTicks', !visible);
     });
 
-    // ─── FPS toggle ────────────────────────────────────────────────
-    const fpsToggleEl = document.getElementById('fpsToggle');
-
-    // Continuous: full circle. Ticking: circle with gap at 12 o'clock.
-    // Gap endpoints are at ±0.25 on x, at y = -sqrt(0.65²-0.25²) ≈ -0.601.
-    const ICON_CONTINUOUS = `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
-      <circle cx="0" cy="0" r="0.65" stroke="currentColor" stroke-width="0.14"/>
-    </svg>`;
-    const ICON_TICKING = `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
-      <path d="M -0.25 -0.601 A 0.65 0.65 0 1 1 0.25 -0.601" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
-    </svg>`;
-
-    function applyFps(fps) {
-      startupAnim = false;       // cancel any in-progress startup sweep
-      targetFps   = fps;
-      FRAME_MS    = 1000 / fps;
-      fpsToggleEl.innerHTML = fps === 30 ? ICON_CONTINUOUS : ICON_TICKING;
-      fpsToggleEl.classList.toggle('ticking', fps === 1);
-      localStorage.setItem('fps', fps);
-    }
-
-    applyFps(targetFps);
-
-    // Arm startup sweep after applyFps so it isn't immediately cancelled.
-    // Also restore 30 FPS for the sweep duration — applyFps set it to 1000 ms.
-    if (targetFps === 1) {
-      startupAnim = true;
-      FRAME_MS = 1000 / 30;
-      const t  = new Date();
-      const ms = t.getMilliseconds();
-      const s0 = t.getSeconds() + ms / 1000;
-      const m0 = t.getMinutes() + s0 / 60;
-      const h0 = (t.getHours() % 12) + m0 / 60;
-      animTargetS = s0 * 6;
-      animTargetM = m0 * 6;
-      animTargetH = h0 * 30;
-    }
-
-    fpsToggleEl.addEventListener('click', function () {
-      applyFps(targetFps === 30 ? 1 : 30);
-    });
-
-    // ─── Stem slider ───────────────────────────────────────────────
+    // ─── Stem slider ──────────────────────────────────────────────
     document.getElementById('stemSlider').addEventListener('input', function () {
       stem = this.value / 1000;
       localStorage.setItem('stem', this.value);

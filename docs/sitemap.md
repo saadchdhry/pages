@@ -2,8 +2,8 @@
 
 ```
 github-pages/
-├── index.html          — Digital clock  (default landing page)
-├── analog.html         — Bauhaus analog clock
+├── index.html          — Analog clock (active)
+├── old.html            — Deprecated original analog clock
 ├── favicon.png         — Site favicon (32×32 PNG)
 └── docs/
     ├── sitemap.md      — This file
@@ -13,20 +13,14 @@ github-pages/
 ## Pages
 
 ### `/` · `index.html`
-A minimal 24-hour digital clock.
-Displays `HH:MM` in large weight-100 type with seconds in a smaller weight alongside, and the current date below. Ticks every second via `setInterval`. Adapts to system dark/light mode.
 
-### `/analog.html`
-A Bauhaus-inspired monotone analog clock.
-SVG-rendered with smooth `requestAnimationFrame` animation. Three geometric hands (hour, minute, second) with `mix-blend-mode: difference` blending — hands invert each other's colour where they cross. No numerals; geometric tick marks only.
+Optimised Bauhaus-inspired analog clock. SVG-rendered with two clock modes:
 
-## Navigation
+- **Continuous** (30 FPS): smooth sweeping hands
+- **Ticking** (1 FPS): second hand snaps to second markers; startup sweep animation on page load
 
-The two pages are linked by a persistent tab in the bottom-right corner of each page.
+Three geometric hands (hour, minute, second + lollipop counterweight) with `mix-blend-mode: difference` blending. Tick marks sized by golden ratio. UI controls: stroke-weight slider, minute-tick toggle, continuous/ticking mode toggle.
 
-| Current page | Tab icon | Destination |
-|---|---|---|
-| `index.html` | ○ thin circle | `analog.html` |
-| `analog.html` | • filled dot | `index.html` |
+### `/old.html`
 
-The tab sits at 18% opacity and rises to 55% on hover.
+Deprecated. The original analog clock, superseded by `index.html`. Kept for reference.
