@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>&#8212;</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      color-scheme: light dark;
+    }
+
+    body {
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0c0c0c;
+      }
+
+      .bg {
+        fill: #0c0c0c;
+      }
+    }
+
+    @media (prefers-color-scheme: light) {
+      body {
+        background: #f5f5f3;
+      }
+
+      .bg {
+        fill: #f5f5f3;
+      }
+    }
+
+    #clock {
+      width: min(70vw, 70vh);
+      height: min(70vw, 70vh);
+      display: block;
+      border-radius: 50%;
+    }
+
+    .tick,
+    .hand,
+    .pip {
+      mix-blend-mode: difference;
+      fill: white;
+      stroke: white;
+    }
+
+    .hand,
+    .pip {
+      stroke: none;
+    }
+
+    /* Hint the browser to promote each hand to its own compositor layer. */
+    #hHand,
+    #mHand,
+    #sHand {
+      will-change: transform;
+    }
+
+    /* ── Minute tick toggle ── */
+    #minToggle {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 36px;
+      height: 36px;
+      opacity: 0.18;
+      transition: opacity 0.2s ease;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #minToggle:hover  { opacity: 0.55; }
+    #minToggle.active { opacity: 0.40; }
+
+    /* ── Stem slider ── */
+    #stemSlider {
+      position: fixed;
+      bottom: 32px;
+      left: 24px;
+      width: 80px;
+      opacity: 0.18;
+      transition: opacity 0.2s ease;
+      cursor: pointer;
+    }
+    #stemSlider:hover { opacity: 0.55; }
+    @media (prefers-color-scheme: dark)  { #stemSlider { accent-color: #f0f0f0; } }
+    @media (prefers-color-scheme: light) { #stemSlider { accent-color: #111111; } }
+
+  </style>
+</head>
+
+<body>
+
+  <svg id="clock" viewBox="-1 -1 2 2">
+
+    <rect x="-1" y="-1" width="2" height="2" class="bg" />
+
+    <circle cx="0" cy="0" r="0.35" class="pip" />
+
+    <g id="ticks"></g>
+
+    <g id="minTicks" style="display:none"></g>
+
+    <g id="hHand"></g>
+    <g id="mHand"></g>
+    <g id="sHand"></g>
+
+  </svg>
+
+  <input type="range" id="stemSlider" min="2" max="20" value="5" step="1" aria-label="Stroke weight">
+
+  <button id="minToggle" aria-label="Toggle minute markers">
+    <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
+      <line x1="0"     y1="-0.62" x2="0"     y2="-0.90" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+      <line x1="0.62"  y1="0"     x2="0.90"  y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+      <line x1="0"     y1="0.62"  x2="0"     y2="0.90"  stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+      <line x1="-0.62" y1="0"     x2="-0.90" y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <script>
+    // ─── Design constants ──────────────────────────────────────────
+    const PHI  = (1 + Math.sqrt(5)) / 2;
+    let   stem = 0.005;
+    let   sW, mW, hW;
+
+    function updateWidths() {
+      sW = stem;
+      mW = stem * PHI * PHI;
+      hW = stem * PHI * PHI * PHI * PHI;
+    }
+
+    // ─── Tick marks ────────────────────────────────────────────────
+    const ticksEl    = document.getElementById('ticks');
+    const minTicksEl = document.getElementById('minTicks');
+
+    function buildTicks() {
+      ticksEl.innerHTML    = '';
+      minTicksEl.innerHTML = '';
+
+      const tickOuter  = 0.940;
+      const majorInner = 0.860;
+      const majorLen   = tickOuter - majorInner;
+      const minorInner = tickOuter - majorLen / (PHI * PHI);
+
+      for (let i = 0; i < 60; i++) {
+        const major  = (i % 5 === 0);
+        const a      = i * 6 * Math.PI / 180;
+        const r0     = major ? majorInner : minorInner;
+        const sw     = major ? mW : sW;
+        const target = major ? ticksEl : minTicksEl;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', ( Math.sin(a) * r0).toFixed(5));
+        line.setAttribute('y1', (-Math.cos(a) * r0).toFixed(5));
+        line.setAttribute('x2', ( Math.sin(a) * tickOuter).toFixed(5));
+        line.setAttribute('y2', (-Math.cos(a) * tickOuter).toFixed(5));
+        line.setAttribute('stroke-width',   sw);
+        line.setAttribute('stroke-linecap', 'round');
+        line.classList.add('tick');
+        target.appendChild(line);
+      }
+    }
+
+    // ─── Hand builders ─────────────────────────────────────────────
+    function mkRect(x, y, w, h, rx = 0) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      el.setAttribute('x', x); el.setAttribute('y', y);
+      el.setAttribute('width', w); el.setAttribute('height', h);
+      if (rx) el.setAttribute('rx', rx);
+      el.classList.add('hand');
+      return el;
+    }
+
+    function mkCircle(cx, cy, r) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      el.setAttribute('cx', cx); el.setAttribute('cy', cy); el.setAttribute('r', r);
+      el.classList.add('hand');
+      return el;
+    }
+
+    const hHandEl = document.getElementById('hHand');
+    const mHandEl = document.getElementById('mHand');
+    const sHandEl = document.getElementById('sHand');
+
+    function buildHands() {
+      hHandEl.innerHTML = '';
+      mHandEl.innerHTML = '';
+      sHandEl.innerHTML = '';
+
+      hHandEl.appendChild(mkRect(-hW/2, -0.500, hW, 0.570, hW/2));
+      mHandEl.appendChild(mkRect(-mW/2, -0.755, mW, 0.845, mW/2));
+      sHandEl.appendChild(mkRect(-sW/2, -0.862, sW, 0.952, sW/2));
+      sHandEl.appendChild(mkCircle(0, 0.210, 0.040));
+    }
+
+    // ─── Build ─────────────────────────────────────────────────────
+    function build() {
+      updateWidths();
+      buildTicks();
+      buildHands();
+    }
+
+    // ─── Restore persisted settings ────────────────────────────────
+    const slider = document.getElementById('stemSlider');
+
+    const savedStem = localStorage.getItem('stem');
+    if (savedStem !== null) {
+      slider.value = savedStem;
+      stem = savedStem / 1000;
+    }
+
+    const savedMinTicks = localStorage.getItem('minTicks');
+    if (savedMinTicks === 'true') {
+      minTicksEl.style.display = '';
+      document.getElementById('minToggle').classList.add('active');
+    }
+
+    build();
+
+    // ─── Animation loop — capped at 30 FPS ─────────────────────────
+    const FRAME_MS = 1000 / 30;
+    let lastDraw = 0;
+
+    function draw(ts) {
+      requestAnimationFrame(draw);
+
+      if (ts - lastDraw < FRAME_MS) return;
+      lastDraw = ts;
+
+      const now = new Date();
+      const ms  = now.getMilliseconds();
+      const s   = now.getSeconds()      + ms / 1000;
+      const m   = now.getMinutes()      + s  / 60;
+      const h   = (now.getHours() % 12) + m  / 60;
+
+      hHandEl.setAttribute('transform', `rotate(${(h * 30).toFixed(3)})`);
+      mHandEl.setAttribute('transform', `rotate(${(m *  6).toFixed(3)})`);
+      sHandEl.setAttribute('transform', `rotate(${(s *  6).toFixed(3)})`);
+
+    }
+
+    requestAnimationFrame(draw);
+
+    // ─── Minute tick toggle ────────────────────────────────────────
+    document.getElementById('minToggle').addEventListener('click', function () {
+      const visible = minTicksEl.style.display !== 'none';
+      minTicksEl.style.display = visible ? 'none' : '';
+      this.classList.toggle('active', !visible);
+      localStorage.setItem('minTicks', !visible);
+    });
+
+    // ─── Stem slider ───────────────────────────────────────────────
+    document.getElementById('stemSlider').addEventListener('input', function () {
+      stem = this.value / 1000;
+      localStorage.setItem('stem', this.value);
+      build();
+    });
+  </script>
+
+</body>
+
+</html>
