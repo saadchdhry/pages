@@ -262,21 +262,49 @@
 
     build();
 
-    // ─── Animation loop ────────────────────────────────────────────
+    // ─── Clock mode & animation loop ──────────────────────────────
+    // Clock mode (continuous / ticking) is the governing factor; FPS follows.
+    // On page load in ticking mode a startup sweep runs at 30 FPS, animating
+    // all hands from 12:00 to their correct positions, then drops to 1 FPS.
+
+    const ANIM_SPEED = 240;  // deg/sec during startup sweep (~1.5 s worst-case)
+
     let targetFps = parseInt(localStorage.getItem('fps') ?? '30', 10);
-    let FRAME_MS  = 1000 / targetFps;
-    let lastDraw  = 0;
+    let FRAME_MS  = 1000 / 30;  // always start at 30 FPS; may drop after sweep
+    // Initialise to now so the first RAF dt is ~5–15 ms, not "time since navigation".
+    let lastDraw  = performance.now();
+
+    // Per-hand animated and target angles for startup sweep
+    let startupAnim = false;
+    let animS = 0, animM = 0, animH = 0;
+    let animTargetS = 0, animTargetM = 0, animTargetH = 0;
 
     function draw(ts) {
       requestAnimationFrame(draw);
 
       if (ts - lastDraw < FRAME_MS) return;
+      // Cap dt so a hidden-then-restored tab can't skip the animation.
+      const dt = Math.min((ts - lastDraw) / 1000, 0.1);
       lastDraw = ts;
+
+      if (startupAnim) {
+        animS = Math.min(animS + ANIM_SPEED * dt, animTargetS);
+        animM = Math.min(animM + ANIM_SPEED * dt, animTargetM);
+        animH = Math.min(animH + ANIM_SPEED * dt, animTargetH);
+
+        hHandEl.setAttribute('transform', `rotate(${animH.toFixed(3)})`);
+        mHandEl.setAttribute('transform', `rotate(${animM.toFixed(3)})`);
+        sHandEl.setAttribute('transform', `rotate(${animS.toFixed(3)})`);
+
+        if (animS >= animTargetS && animM >= animTargetM && animH >= animTargetH) {
+          startupAnim = false;
+          FRAME_MS    = 1000 / targetFps;  // drop to 1 FPS
+        }
+        return;
+      }
 
       const now = new Date();
       const ms  = now.getMilliseconds();
-      // Continuous: fractional seconds for smooth sweep.
-      // Ticking: integer seconds so the hand snaps to marker positions.
       const s   = targetFps === 30
                     ? now.getSeconds() + ms / 1000
                     : now.getSeconds();
@@ -286,7 +314,6 @@
       hHandEl.setAttribute('transform', `rotate(${(h * 30).toFixed(3)})`);
       mHandEl.setAttribute('transform', `rotate(${(m *  6).toFixed(3)})`);
       sHandEl.setAttribute('transform', `rotate(${(s *  6).toFixed(3)})`);
-
     }
 
     requestAnimationFrame(draw);
@@ -312,14 +339,30 @@
     </svg>`;
 
     function applyFps(fps) {
-      targetFps = fps;
-      FRAME_MS  = 1000 / fps;
+      startupAnim = false;       // cancel any in-progress startup sweep
+      targetFps   = fps;
+      FRAME_MS    = 1000 / fps;
       fpsToggleEl.innerHTML = fps === 30 ? ICON_CONTINUOUS : ICON_TICKING;
       fpsToggleEl.classList.toggle('ticking', fps === 1);
       localStorage.setItem('fps', fps);
     }
 
     applyFps(targetFps);
+
+    // Arm startup sweep after applyFps so it isn't immediately cancelled.
+    // Also restore 30 FPS for the sweep duration — applyFps set it to 1000 ms.
+    if (targetFps === 1) {
+      startupAnim = true;
+      FRAME_MS = 1000 / 30;
+      const t  = new Date();
+      const ms = t.getMilliseconds();
+      const s0 = t.getSeconds() + ms / 1000;
+      const m0 = t.getMinutes() + s0 / 60;
+      const h0 = (t.getHours() % 12) + m0 / 60;
+      animTargetS = s0 * 6;
+      animTargetM = m0 * 6;
+      animTargetH = h0 * 30;
+    }
 
     fpsToggleEl.addEventListener('click', function () {
       applyFps(targetFps === 30 ? 1 : 30);
