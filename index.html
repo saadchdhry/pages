@@ -66,7 +66,8 @@
     }
 
     /* Hands are filled rects — stroke would default to 1 SVG user unit (enormous) */
-    .hand {
+    .hand,
+    .pip {
       stroke: none;
     }
 
@@ -114,6 +115,9 @@
     <!-- Solid background so blend modes have a known base -->
     <rect x="-1" y="-1" width="2" height="2" class="bg" />
 
+    <!-- Centre pip, rendered just above background so it blends only against bg -->
+    <circle cx="0" cy="0" r="0.35" class="pip" />
+
     <!-- 12 hour tick marks, generated below -->
     <g id="ticks"></g>
 
@@ -127,8 +131,6 @@
     <g id="mHand"></g>
     <g id="sHand"></g>
 
-    <!-- Centre pip, rendered last so it always reads clearly -->
-    <circle cx="0" cy="0" r="0.036" class="pip" />
 
   </svg>
 
