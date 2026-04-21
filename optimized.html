@@ -90,13 +90,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 9px;
-      font-family: monospace;
-      letter-spacing: 0;
-      color: currentColor;
     }
-    #fpsToggle:hover  { opacity: 0.55; }
-    #fpsToggle.slow   { opacity: 0.40; }
+    #fpsToggle:hover   { opacity: 0.55; }
+    #fpsToggle.ticking { opacity: 0.40; }
 
     /* ── Minute tick toggle ── */
     #minToggle {
@@ -155,7 +151,7 @@
 
   <input type="range" id="stemSlider" min="2" max="20" value="5" step="1" aria-label="Stroke weight">
 
-  <button id="fpsToggle" aria-label="Toggle frame rate">30</button>
+  <button id="fpsToggle" aria-label="Toggle continuous / ticking mode"></button>
 
   <button id="minToggle" aria-label="Toggle minute markers">
     <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
@@ -279,7 +275,11 @@
 
       const now = new Date();
       const ms  = now.getMilliseconds();
-      const s   = now.getSeconds()      + ms / 1000;
+      // Continuous: fractional seconds for smooth sweep.
+      // Ticking: integer seconds so the hand snaps to marker positions.
+      const s   = targetFps === 30
+                    ? now.getSeconds() + ms / 1000
+                    : now.getSeconds();
       const m   = now.getMinutes()      + s  / 60;
       const h   = (now.getHours() % 12) + m  / 60;
 
@@ -302,11 +302,20 @@
     // ─── FPS toggle ────────────────────────────────────────────────
     const fpsToggleEl = document.getElementById('fpsToggle');
 
+    // Continuous: full circle. Ticking: circle with gap at 12 o'clock.
+    // Gap endpoints are at ±0.25 on x, at y = -sqrt(0.65²-0.25²) ≈ -0.601.
+    const ICON_CONTINUOUS = `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
+      <circle cx="0" cy="0" r="0.65" stroke="currentColor" stroke-width="0.14"/>
+    </svg>`;
+    const ICON_TICKING = `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
+      <path d="M -0.25 -0.601 A 0.65 0.65 0 1 1 0.25 -0.601" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+    </svg>`;
+
     function applyFps(fps) {
-      targetFps       = fps;
-      FRAME_MS        = 1000 / fps;
-      fpsToggleEl.textContent = fps;
-      fpsToggleEl.classList.toggle('slow', fps === 1);
+      targetFps = fps;
+      FRAME_MS  = 1000 / fps;
+      fpsToggleEl.innerHTML = fps === 30 ? ICON_CONTINUOUS : ICON_TICKING;
+      fpsToggleEl.classList.toggle('ticking', fps === 1);
       localStorage.setItem('fps', fps);
     }
 
