@@ -68,6 +68,46 @@ x = Math.sin(a) * radius
 y = −Math.cos(a) * radius
 ```
 
+### Calendar visualisation
+
+Three calendar values are encoded geometrically inside `buildTicks()`. No text is used; all elements carry `class="tick"` and inherit `mix-blend-mode: difference`.
+
+**Terminology:** `month` = month of year, `day` = day of week, `date` = date of month.
+
+#### Month (12 values)
+
+The current month's hour tick is drawn with a thicker stroke (`stem × φ³` vs the normal `mW = stem × φ²`). All other hour ticks are unchanged.
+
+Mapping: January → hour-1 position (`i = 5`), February → hour-2 (`i = 10`), …, December → hour-12 (`i = 0`).
+
+```js
+const monthTickIdx = ((curMonth + 1) % 12) * 5;
+// sw = i === monthTickIdx ? stem * phi3 : mW
+```
+
+#### Day of week (7 values)
+
+Seven small circles sit on an inner perimeter at radius `0.780`, at the seven hour positions spanning 9 o'clock → 3 o'clock (top arc). All seven render as hollow rings (`fill: none`); the current day is filled solid.
+
+Anchor: Monday = 9, Tuesday = 10, …, Saturday = 2, Sunday = 3.
+
+```js
+const DAY_TO_IDX   = [15, 45, 50, 55, 0, 5, 10]; // indexed by getDay() (0=Sun)
+const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15]; // Mon→Sun, for rendering all 7
+// circle r = stem * phi3;  stroke-width = sW
+// hollow: circle.style.fill = 'none'
+```
+
+#### Date of month (1–31)
+
+A single short tick on an outer perimeter marks today's date. It aligns with the corresponding minute-marker angle (date × 6°), covering dates 1–31 from just past 12 o'clock to just past 6 o'clock.
+
+```js
+const dateInner = 0.955;
+const dateOuter = 0.985;
+// length ≈ 0.030; stroke-width = sW
+```
+
 ### Hand geometry
 
 Hands are SVG `<rect>` elements centred on the origin, tip toward `−y`:

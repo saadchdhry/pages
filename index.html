@@ -187,11 +187,27 @@
       const majorLen   = tickOuter - majorInner;
       const minorInner = tickOuter - majorLen / (PHI * PHI);
 
+      // ── Calendar state ────────────────────────────────────────────
+      const now      = new Date();
+      const curMonth = now.getMonth();  // 0–11; 0=Jan
+      const curDay   = now.getDay();    // 0=Sun…6=Sat
+      const curDate  = now.getDate();   // 1–31
+
+      // Jan(0)→i=5, Feb(1)→i=10, …, Dec(11)→i=0
+      const monthTickIdx = ((curMonth + 1) % 12) * 5;
+
+      // Mon→45, Tue→50, Wed→55, Thu→0, Fri→5, Sat→10, Sun→15
+      const DAY_TO_IDX = [15, 45, 50, 55, 0, 5, 10];
+      const dayTickIdx = DAY_TO_IDX[curDay];
+
+      const phi3 = PHI * PHI * PHI;
+
+      // ── Hour & minute ticks ───────────────────────────────────────
       for (let i = 0; i < 60; i++) {
         const major  = (i % 5 === 0);
         const a      = i * 6 * Math.PI / 180;
         const r0     = major ? majorInner : minorInner;
-        const sw     = major ? mW : sW;
+        const sw     = major ? (i === monthTickIdx ? stem * phi3 : mW) : sW;
         const target = major ? ticksEl : minTicksEl;
 
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -204,6 +220,42 @@
         line.classList.add('tick');
         target.appendChild(line);
       }
+
+      // ── Day of week: 7 circles on inner perimeter (r = 0.780) ────
+      // Ordered Mon→Sun, matching hour positions 9→3
+      const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15];
+      const dayCircleRad  = 0.780;
+      const dayCircleR    = stem * phi3;
+
+      for (let d = 0; d < 7; d++) {
+        const idx     = DAY_POSITIONS[d];
+        const a       = idx * 6 * Math.PI / 180;
+        const isToday = idx === dayTickIdx;
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', ( Math.sin(a) * dayCircleRad).toFixed(5));
+        circle.setAttribute('cy', (-Math.cos(a) * dayCircleRad).toFixed(5));
+        circle.setAttribute('r',  dayCircleR.toFixed(5));
+        circle.setAttribute('stroke-width', sW);
+        if (!isToday) circle.style.fill = 'none';
+        circle.classList.add('tick');
+        ticksEl.appendChild(circle);
+      }
+
+      // ── Date of month: single tick on outer perimeter ─────────────
+      const dateInner = 0.955;
+      const dateOuter = 0.985;
+      const da        = curDate * 6 * Math.PI / 180;
+
+      const dateLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      dateLine.setAttribute('x1', ( Math.sin(da) * dateInner).toFixed(5));
+      dateLine.setAttribute('y1', (-Math.cos(da) * dateInner).toFixed(5));
+      dateLine.setAttribute('x2', ( Math.sin(da) * dateOuter).toFixed(5));
+      dateLine.setAttribute('y2', (-Math.cos(da) * dateOuter).toFixed(5));
+      dateLine.setAttribute('stroke-width',   sW);
+      dateLine.setAttribute('stroke-linecap', 'round');
+      dateLine.classList.add('tick');
+      ticksEl.appendChild(dateLine);
     }
 
     // ─── Hand builders ─────────────────────────────────────────────

@@ -2,9 +2,7 @@
 
 ## Current task
 
-**Calendar visualisation** — encode month, day-of-week, and date-of-month onto the clock face using purely visual/geometric cues. No text or labels.
-
-The month implementation from the previous session was discarded and is **not present in the current code**. Start fresh on all three.
+**Calendar visualisation — visual design pass.** The three calendar markers (month, day, date) are fully implemented and working. This task is a visual design refinement of those markers. No new features; no logic changes. Only geometry and proportions.
 
 ---
 
@@ -14,8 +12,8 @@ The month implementation from the previous session was discarded and is **not pr
 
 ```
 github-pages/
-├── index.html          ← original clock (to be deprecated)
-├── index.html      ← active working file — all new work goes here
+├── index.html          ← active working file — all new work goes here
+├── old.html            ← deprecated, ignore
 ├── favicon.png
 └── docs/
     ├── sitemap.md
@@ -33,7 +31,7 @@ github-pages/
 ```
 <rect class="bg"/>          ← background fill
 <circle class="pip"/>       ← centre pip r=0.35 — below everything
-<g id="ticks"/>             ← 12 hour ticks + any calendar markers
+<g id="ticks"/>             ← 12 hour ticks + calendar markers
 <g id="minTicks"/>          ← 48 minute ticks (toggleable, hidden by default)
 <g id="hHand"/>             ← hour hand
 <g id="mHand"/>             ← minute hand
@@ -44,6 +42,7 @@ github-pages/
 
 All `.tick`, `.hand`, `.pip` use `mix-blend-mode: difference; fill: white; stroke: white`.
 **Do not animate `fill` or `opacity`** — that interacts badly with blend mode. Only animate `transform`.
+To override CSS `fill: white` on individual SVG elements, use **inline style** (`element.style.fill = 'none'`), not a presentation attribute — CSS specificity overrides SVG attributes.
 
 ### Design constants (JS)
 
@@ -62,71 +61,70 @@ const majorLen   = 0.080;               // tickOuter − majorInner
 const minorInner = tickOuter - majorLen / (PHI * PHI);  // ≈ 0.909
 ```
 
-Major tick midpoint radius = `(tickOuter + majorInner) / 2 = 0.900`.
-
-### Dimension table (default `stem = 0.005`)
-
-| Element | Property | Value |
-|---|---|---|
-| Hour ticks (×12) | stroke-width | `mW = stem × φ² ≈ 0.013` |
-| Minute ticks (×48) | stroke-width | `sW = stem = 0.005` |
-| Major tick length | geometry | `0.080` |
-| Minor tick length | geometry | `majorLen ÷ φ² ≈ 0.031` |
-| Hour hand tip/tail | y | `−0.500 / +0.070` |
-| Minute hand tip/tail | y | `−0.755 / +0.090` |
-| Second hand tip/tail | y | `−0.862 / +0.090` |
-| Lollipop circle | cy / r | `0.210 / 0.040` |
-| Centre pip | r | `0.35` |
-
-### Clock modes
-
-Two modes, persisted to `localStorage` key `'fps'`:
-
-| Mode | FPS | `targetFps` |
-|---|---|---|
-| Continuous | 30 | `30` |
-| Ticking | 1 | `1` |
-
-**Startup sweep** (ticking mode only): on page load, all hands animate from 12:00 to the correct time at 240 deg/sec (30 FPS), then drop to 1 FPS. Governed by `startupAnim` flag in `draw()`.
-
-### UI controls
-
-| Control | Position | Behaviour |
-|---|---|---|
-| `#stemSlider` | `fixed; bottom: 32px; left: 24px` | `stem = value/1000`; persisted |
-| `#minToggle` | `fixed; bottom: 24px; right: 24px` | Toggles `#minTicks`; persisted |
-| `#fpsToggle` | `fixed; bottom: 72px; right: 24px` | Toggles continuous/ticking mode; full circle icon vs broken circle icon; persisted |
-
 ### `buildTicks()` structure
 
-Called inside `build()` on load and on slider change. Clears and regenerates both `#ticks` and `#minTicks`. The loop runs `i = 0…59`; `major = (i % 5 === 0)`. Any calendar markers added here must survive `build()` being re-called (i.e. they must be regenerated each call, not appended once).
+Called inside `build()` on load and on slider change. Clears and regenerates both `#ticks` and `#minTicks`. All calendar markers live inside `buildTicks()` and are regenerated on every call.
 
 ---
 
-## The calendar task
+## Calendar markers — current implementation
 
-### Design principle
+Three values are encoded geometrically. Terminology agreed: `month` = month of year, `day` = day of week, `date` = date of month.
 
-Represent month, day-of-week, and date-of-month **visually and geometrically** — no text, no labels. Each piece of information maps onto the existing clock geometry.
+### Month
 
-### Month (12 positions)
+The current month's hour tick is drawn with stroke-width `stem × φ³` instead of the normal `mW = stem × φ²`. All other 11 hour ticks are normal weight.
 
-- The 12 hour markers map to the 12 months: position 0 (12:00) = January, position 1 (01:00) = February, … position 11 (11:00) = December.
-- `new Date().getMonth()` returns `0`–`11`.
-- The current month's hour marker is visually distinguished from the other 11. **Implementation is open** — the previous approach (filled dot replacing the line) was tried and discarded. Approach this fresh. Ask clarifying questions before implementing.
+Mapping: January → 1:00 position (`i = 5`), February → 2:00 (`i = 10`), …, December → 12:00 (`i = 0`).
 
-### Day of week (7 values)
+```js
+const monthTickIdx = ((curMonth + 1) % 12) * 5;
+// sw = i === monthTickIdx ? stem * phi3 : mW
+```
 
-- Not yet designed. Ask clarifying questions before implementing.
+### Day of week
 
-### Date of month (1–31)
+Seven small circles on an inner perimeter at radius `0.780`, at the seven hour positions spanning 9→3 (top arc). All render hollow (`fill: none`); current day is solid filled.
 
-- Not yet designed. Ask clarifying questions before implementing.
+Anchor: **Monday = 9**, Tuesday = 10, Wednesday = 11, Thursday = 12, Friday = 1, Saturday = 2, **Sunday = 3**.
 
-### Constraints for all three
+```js
+const DAY_TO_IDX    = [15, 45, 50, 55, 0, 5, 10]; // indexed by getDay() (0=Sun)
+const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15]; // Mon→Sun, renders all 7
+// circle r = stem * phi3;  stroke-width = sW
+// hollow override: circle.style.fill = 'none'
+```
 
-- Use only SVG geometry (`<line>`, `<circle>`, `<rect>`, `<path>`) inside `#ticks` (or a new dedicated `<g>` layer added to the SVG).
-- All new elements must carry `class="tick"` (or equivalent) so blend mode is inherited.
-- Do not add text nodes to the SVG.
-- Do not break the existing tick geometry or hand behaviour.
-- Ask clarifying questions with numbered items and multi-choice options before implementing any of the three.
+### Date of month
+
+A single short tick on an outer perimeter at the minute-marker angle for today's date (date × 6°). Covers positions 1–31 (just past 12:00 → just past 6:00).
+
+```js
+const dateInner = 0.955;
+const dateOuter = 0.985;   // length ≈ 0.030; stroke-width = sW
+```
+
+### Dimension table (default `stem = 0.005`)
+
+| Element | Property | Value | ~default |
+|---|---|---|---|
+| Day circles (×7) | center radius | `0.780` | — |
+| Day circles (×7) | circle radius | `stem × φ³` | `≈ 0.021` |
+| Day circles (×7) | stroke-width | `stem` | `0.005` |
+| Date tick (×1) | inner radius | `0.955` | — |
+| Date tick (×1) | outer radius | `0.985` | — |
+| Date tick (×1) | stroke-width | `stem` | `0.005` |
+| Month tick | stroke-width | `stem × φ³` | `≈ 0.021` |
+
+---
+
+## The visual design task
+
+The functional implementation is complete and correct. The next session focuses purely on visual design:
+
+- Do the proportions feel right at default `stem`? Are the day circles too large / too small?
+- Does the month tick read clearly as distinct without being jarring?
+- Is the date tick too close to / too far from the outer tick ring?
+- Any spacing, sizing, or perimeter radius adjustments needed.
+
+**Ask the user to open the preview and walk through their impressions before proposing changes.**
