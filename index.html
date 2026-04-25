@@ -167,6 +167,7 @@
     const PHI  = (1 + Math.sqrt(5)) / 2;
     let   stem = 0.005;
     let   sW, mW, hW;
+    const SECOND_LOLLIPOP_R = 0.040;
 
     function updateWidths() {
       sW = stem;
@@ -204,8 +205,6 @@
       const DAY_TO_IDX = [15, 45, 50, 55, 0, 5, 10];
       const dayTickIdx = DAY_TO_IDX[curDay];
 
-      const phi3 = PHI * PHI * PHI;
-
       function appendTick(target, angle, inner, outer, width) {
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('x1', ( Math.sin(angle) * inner).toFixed(5));
@@ -239,7 +238,7 @@
       // Ordered Mon→Sun, matching hour positions 9→3
       const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15];
       const dayCircleRad  = 0.650;
-      const dayCircleR    = stem * phi3;
+      const dayCircleR    = SECOND_LOLLIPOP_R;
 
       for (let d = 0; d < 7; d++) {
         const idx     = DAY_POSITIONS[d];
@@ -286,7 +285,7 @@
       hHandEl.appendChild(mkRect(-hW/2, -0.500, hW, 0.570, hW/2));
       mHandEl.appendChild(mkRect(-mW/2, -0.755, mW, 0.845, mW/2));
       sHandEl.appendChild(mkRect(-sW/2, -0.862, sW, 0.952, sW/2));
-      sHandEl.appendChild(mkCircle(0, 0.210, 0.040));
+      sHandEl.appendChild(mkCircle(0, 0.210, SECOND_LOLLIPOP_R));
     }
 
     // ─── Build ─────────────────────────────────────────────────────
