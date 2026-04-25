@@ -6,6 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>&#8212;</title>
   <link rel="icon" type="image/png" href="favicon.png">
+  <script>
+    const savedThemeMode = localStorage.getItem('themeMode');
+    if (savedThemeMode === 'dark' || savedThemeMode === 'light') {
+      document.documentElement.setAttribute('data-theme', savedThemeMode);
+    }
+  </script>
   <style>
     *,
     *::before,
@@ -17,6 +23,31 @@
 
     :root {
       color-scheme: light dark;
+      --bg-color: #f5f5f3;
+      --ui-color: #111111;
+      --accent-color: #111111;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg-color: #0c0c0c;
+      --ui-color: #f0f0f0;
+      --accent-color: #f0f0f0;
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg-color: #f5f5f3;
+      --ui-color: #111111;
+      --accent-color: #111111;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        --bg-color: #0c0c0c;
+        --ui-color: #f0f0f0;
+        --accent-color: #f0f0f0;
+      }
     }
 
     body {
@@ -25,26 +56,12 @@
       align-items: center;
       justify-content: center;
       user-select: none;
+      background: var(--bg-color);
+      color: var(--ui-color);
     }
 
-    @media (prefers-color-scheme: dark) {
-      body {
-        background: #0c0c0c;
-      }
-
-      .bg {
-        fill: #0c0c0c;
-      }
-    }
-
-    @media (prefers-color-scheme: light) {
-      body {
-        background: #f5f5f3;
-      }
-
-      .bg {
-        fill: #f5f5f3;
-      }
+    .bg {
+      fill: var(--bg-color);
     }
 
     #clock {
@@ -77,7 +94,7 @@
     /* ── FPS toggle ── */
     #fpsToggle {
       position: fixed;
-      bottom: 72px;
+      bottom: 120px;
       right: 24px;
       width: 36px;
       height: 36px;
@@ -97,7 +114,7 @@
     /* ── Minute tick toggle ── */
     #minToggle {
       position: fixed;
-      bottom: 24px;
+      bottom: 72px;
       right: 24px;
       width: 36px;
       height: 36px;
@@ -134,6 +151,26 @@
     #randomizeBtn:hover  { opacity: 0.55; }
     #randomizeBtn.active { opacity: 0.40; }
 
+    /* ── Theme toggle ── */
+    #themeToggle {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 36px;
+      height: 36px;
+      opacity: 0.18;
+      transition: opacity 0.2s ease;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #themeToggle:hover  { opacity: 0.55; }
+    #themeToggle.active { opacity: 0.40; }
+
     /* ── Stem slider ── */
     #stemSlider {
       position: fixed;
@@ -145,8 +182,7 @@
       cursor: pointer;
     }
     #stemSlider:hover { opacity: 0.55; }
-    @media (prefers-color-scheme: dark)  { #stemSlider { accent-color: #f0f0f0; } }
-    @media (prefers-color-scheme: light) { #stemSlider { accent-color: #111111; } }
+    #stemSlider { accent-color: var(--accent-color); }
 
   </style>
 </head>
@@ -192,6 +228,8 @@
       <line x1="-0.62" y1="0"     x2="-0.90" y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
     </svg>
   </button>
+
+  <button id="themeToggle" aria-label="Theme: System"></button>
 
   <script>
     // ─── Design constants ──────────────────────────────────────────
@@ -314,6 +352,7 @@
     const mHandEl = document.getElementById('mHand');
     const sHandEl = document.getElementById('sHand');
     const randomizeBtnEl = document.getElementById('randomizeBtn');
+    const themeToggleEl = document.getElementById('themeToggle');
 
     function buildHands() {
       hHandEl.innerHTML = '';
@@ -442,6 +481,7 @@
 
     // ─── FPS toggle ────────────────────────────────────────────────
     const fpsToggleEl = document.getElementById('fpsToggle');
+    const THEME_MODES = ['system', 'dark', 'light'];
 
     // Continuous: full circle. Ticking: circle with gap at 12 o'clock.
     // Gap endpoints are at ±0.25 on x, at y = -sqrt(0.65²-0.25²) ≈ -0.601.
@@ -451,6 +491,49 @@
     const ICON_TICKING = `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
       <path d="M -0.25 -0.601 A 0.65 0.65 0 1 1 0.25 -0.601" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
     </svg>`;
+    const THEME_ICONS = {
+      system: `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
+        <path d="M 0 -0.70 A 0.70 0.70 0 0 0 0 0.70 L 0 -0.70 Z" fill="currentColor" stroke="none"/>
+        <circle cx="0" cy="0" r="0.70" stroke="currentColor" stroke-width="0.14"/>
+        <line x1="0" y1="-0.70" x2="0" y2="0.70" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+      </svg>`,
+      dark: `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
+        <circle cx="-0.08" cy="0" r="0.68" fill="currentColor" stroke="none"/>
+        <circle cx="0.22" cy="-0.04" r="0.62" fill="var(--bg-color)" stroke="none"/>
+      </svg>`,
+      light: `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
+        <circle cx="0" cy="0" r="0.38" stroke="currentColor" stroke-width="0.14"/>
+        <line x1="0" y1="-0.88" x2="0" y2="-0.62" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+        <line x1="0" y1="0.62" x2="0" y2="0.88" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+        <line x1="-0.88" y1="0" x2="-0.62" y2="0" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+        <line x1="0.62" y1="0" x2="0.88" y2="0" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+        <line x1="-0.62" y1="-0.62" x2="-0.44" y2="-0.44" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+        <line x1="0.44" y1="0.44" x2="0.62" y2="0.62" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+        <line x1="0.44" y1="-0.44" x2="0.62" y2="-0.62" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+        <line x1="-0.62" y1="0.62" x2="-0.44" y2="0.44" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+      </svg>`
+    };
+    let themeMode = 'system';
+
+    function titleCase(value) {
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    function applyThemeMode(mode) {
+      themeMode = THEME_MODES.includes(mode) ? mode : 'system';
+
+      if (themeMode === 'system') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', themeMode);
+      }
+
+      const nextMode = THEME_MODES[(THEME_MODES.indexOf(themeMode) + 1) % THEME_MODES.length];
+      themeToggleEl.innerHTML = THEME_ICONS[themeMode];
+      themeToggleEl.classList.toggle('active', themeMode !== 'system');
+      themeToggleEl.setAttribute('aria-label', `Theme: ${titleCase(themeMode)}. Click to switch to ${titleCase(nextMode)}.`);
+      localStorage.setItem('themeMode', themeMode);
+    }
 
     function applyFps(fps) {
       startupAnim = false;       // cancel any in-progress startup sweep
@@ -461,6 +544,7 @@
       localStorage.setItem('fps', fps);
     }
 
+    applyThemeMode(localStorage.getItem('themeMode') ?? 'system');
     applyFps(targetFps);
 
     // Arm startup sweep after applyFps so it isn't immediately cancelled.
@@ -480,6 +564,12 @@
 
     fpsToggleEl.addEventListener('click', function () {
       applyFps(targetFps === 30 ? 1 : 30);
+    });
+
+    // ─── Theme toggle ──────────────────────────────────────────────
+    themeToggleEl.addEventListener('click', function () {
+      const nextMode = THEME_MODES[(THEME_MODES.indexOf(themeMode) + 1) % THEME_MODES.length];
+      applyThemeMode(nextMode);
     });
 
     // ─── Stem slider ───────────────────────────────────────────────
