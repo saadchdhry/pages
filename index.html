@@ -114,6 +114,26 @@
     #minToggle:hover  { opacity: 0.55; }
     #minToggle.active { opacity: 0.40; }
 
+    /* ── Randomize button ── */
+    #randomizeBtn {
+      position: fixed;
+      bottom: 72px;
+      left: 24px;
+      width: 36px;
+      height: 36px;
+      opacity: 0.18;
+      transition: opacity 0.2s ease;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #randomizeBtn:hover  { opacity: 0.55; }
+    #randomizeBtn.active { opacity: 0.40; }
+
     /* ── Stem slider ── */
     #stemSlider {
       position: fixed;
@@ -151,6 +171,17 @@
 
   <input type="range" id="stemSlider" min="2" max="20" value="5" step="1" aria-label="Stroke weight">
 
+  <button id="randomizeBtn" aria-label="Randomize calendar and time">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="3.5" y="3.5" width="13" height="13" rx="3" stroke="currentColor" stroke-width="1.4"/>
+      <circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/>
+      <circle cx="13" cy="7" r="1.2" fill="currentColor" stroke="none"/>
+      <circle cx="10" cy="10" r="1.2" fill="currentColor" stroke="none"/>
+      <circle cx="7" cy="13" r="1.2" fill="currentColor" stroke="none"/>
+      <circle cx="13" cy="13" r="1.2" fill="currentColor" stroke="none"/>
+    </svg>
+  </button>
+
   <button id="fpsToggle" aria-label="Toggle continuous / ticking mode"></button>
 
   <button id="minToggle" aria-label="Toggle minute markers">
@@ -168,6 +199,11 @@
     let   stem = 0.005;
     let   sW, mW, hW;
     const SECOND_LOLLIPOP_R = 0.040;
+    let   testNow = null;
+
+    function getDisplayDate() {
+      return testNow ? new Date(testNow.getTime()) : new Date();
+    }
 
     function updateWidths() {
       sW = stem;
@@ -192,7 +228,7 @@
       const dateInner  = tickOuter - (minorLen * PHI);
 
       // ── Calendar state ────────────────────────────────────────────
-      const now      = new Date();
+      const now      = getDisplayDate();
       const curMonth = now.getMonth();  // 0–11; 0=Jan
       const curDay   = now.getDay();    // 0=Sun…6=Sat
       const curDate  = now.getDate();   // 1–31
@@ -237,8 +273,9 @@
       // ── Day of week: 7 circles on inner perimeter (r = 0.650) ─────
       // Ordered Mon→Sun, matching hour positions 9→3
       const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15];
-      const dayCircleRad  = 0.650;
-      const dayCircleR    = SECOND_LOLLIPOP_R;
+      const dayCircleRad    = 0.650;
+      const dayCircleOuterR = SECOND_LOLLIPOP_R;
+      const dayCircleR      = Math.max(dayCircleOuterR - (sW / 2), 0);
 
       for (let d = 0; d < 7; d++) {
         const idx     = DAY_POSITIONS[d];
@@ -276,6 +313,7 @@
     const hHandEl = document.getElementById('hHand');
     const mHandEl = document.getElementById('mHand');
     const sHandEl = document.getElementById('sHand');
+    const randomizeBtnEl = document.getElementById('randomizeBtn');
 
     function buildHands() {
       hHandEl.innerHTML = '';
@@ -286,6 +324,37 @@
       mHandEl.appendChild(mkRect(-mW/2, -0.755, mW, 0.845, mW/2));
       sHandEl.appendChild(mkRect(-sW/2, -0.862, sW, 0.952, sW/2));
       sHandEl.appendChild(mkCircle(0, 0.210, SECOND_LOLLIPOP_R));
+    }
+
+    function renderHands(now) {
+      const ms = now.getMilliseconds();
+      const s  = targetFps === 30
+                   ? now.getSeconds() + ms / 1000
+                   : now.getSeconds();
+      const m  = now.getMinutes()      + s / 60;
+      const h  = (now.getHours() % 12) + m / 60;
+
+      hHandEl.setAttribute('transform', `rotate(${(h * 30).toFixed(3)})`);
+      mHandEl.setAttribute('transform', `rotate(${(m *  6).toFixed(3)})`);
+      sHandEl.setAttribute('transform', `rotate(${(s *  6).toFixed(3)})`);
+    }
+
+    function randomizeDisplayDate() {
+      const year     = new Date().getFullYear();
+      const month    = Math.floor(Math.random() * 12);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const date     = Math.floor(Math.random() * daysInMonth) + 1;
+      const hours    = Math.floor(Math.random() * 24);
+      const minutes  = Math.floor(Math.random() * 60);
+      const seconds  = Math.floor(Math.random() * 60);
+      const millis   = Math.floor(Math.random() * 1000);
+
+      testNow = new Date(year, month, date, hours, minutes, seconds, millis);
+      startupAnim = false;
+      randomizeBtnEl.classList.add('active');
+      buildTicks();
+      renderHands(testNow);
+      lastDraw = 0;
     }
 
     // ─── Build ─────────────────────────────────────────────────────
@@ -353,17 +422,7 @@
         return;
       }
 
-      const now = new Date();
-      const ms  = now.getMilliseconds();
-      const s   = targetFps === 30
-                    ? now.getSeconds() + ms / 1000
-                    : now.getSeconds();
-      const m   = now.getMinutes()      + s  / 60;
-      const h   = (now.getHours() % 12) + m  / 60;
-
-      hHandEl.setAttribute('transform', `rotate(${(h * 30).toFixed(3)})`);
-      mHandEl.setAttribute('transform', `rotate(${(m *  6).toFixed(3)})`);
-      sHandEl.setAttribute('transform', `rotate(${(s *  6).toFixed(3)})`);
+      renderHands(getDisplayDate());
     }
 
     requestAnimationFrame(draw);
@@ -374,6 +433,11 @@
       minTicksEl.style.display = visible ? 'none' : '';
       this.classList.toggle('active', !visible);
       localStorage.setItem('minTicks', !visible);
+    });
+
+    // ─── Randomize test date/time ──────────────────────────────────
+    randomizeBtnEl.addEventListener('click', function () {
+      randomizeDisplayDate();
     });
 
     // ─── FPS toggle ────────────────────────────────────────────────
