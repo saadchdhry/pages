@@ -186,6 +186,9 @@
       const majorInner = 0.860;
       const majorLen   = tickOuter - majorInner;
       const minorInner = tickOuter - majorLen / (PHI * PHI);
+      const minorLen   = tickOuter - minorInner;
+      const monthInner = tickOuter - (majorLen * PHI);
+      const dateInner  = tickOuter - (minorLen * PHI);
 
       // ── Calendar state ────────────────────────────────────────────
       const now      = new Date();
@@ -195,6 +198,7 @@
 
       // Jan(0)→i=5, Feb(1)→i=10, …, Dec(11)→i=0
       const monthTickIdx = ((curMonth + 1) % 12) * 5;
+      const dateTickIdx  = curDate;
 
       // Mon→45, Tue→50, Wed→55, Thu→0, Fri→5, Sat→10, Sun→15
       const DAY_TO_IDX = [15, 45, 50, 55, 0, 5, 10];
@@ -202,29 +206,39 @@
 
       const phi3 = PHI * PHI * PHI;
 
-      // ── Hour & minute ticks ───────────────────────────────────────
-      for (let i = 0; i < 60; i++) {
-        const major  = (i % 5 === 0);
-        const a      = i * 6 * Math.PI / 180;
-        const r0     = major ? majorInner : minorInner;
-        const sw     = major ? (i === monthTickIdx ? stem * phi3 : mW) : sW;
-        const target = major ? ticksEl : minTicksEl;
-
+      function appendTick(target, angle, inner, outer, width) {
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', ( Math.sin(a) * r0).toFixed(5));
-        line.setAttribute('y1', (-Math.cos(a) * r0).toFixed(5));
-        line.setAttribute('x2', ( Math.sin(a) * tickOuter).toFixed(5));
-        line.setAttribute('y2', (-Math.cos(a) * tickOuter).toFixed(5));
-        line.setAttribute('stroke-width',   sw);
+        line.setAttribute('x1', ( Math.sin(angle) * inner).toFixed(5));
+        line.setAttribute('y1', (-Math.cos(angle) * inner).toFixed(5));
+        line.setAttribute('x2', ( Math.sin(angle) * outer).toFixed(5));
+        line.setAttribute('y2', (-Math.cos(angle) * outer).toFixed(5));
+        line.setAttribute('stroke-width',   width);
         line.setAttribute('stroke-linecap', 'round');
         line.classList.add('tick');
         target.appendChild(line);
       }
 
-      // ── Day of week: 7 circles on inner perimeter (r = 0.780) ────
+      // ── Hour & minute ticks ───────────────────────────────────────
+      for (let i = 0; i < 60; i++) {
+        const major       = (i % 5 === 0);
+        const isMonthTick = i === monthTickIdx;
+        const isDateTick  = i === dateTickIdx;
+        const a           = i * 6 * Math.PI / 180;
+
+        if (major) {
+          appendTick(ticksEl, a, isMonthTick ? monthInner : majorInner, tickOuter, mW);
+          if (isDateTick) appendTick(ticksEl, a, dateInner, tickOuter, sW);
+        } else if (isDateTick) {
+          appendTick(ticksEl, a, dateInner, tickOuter, sW);
+        } else {
+          appendTick(minTicksEl, a, minorInner, tickOuter, sW);
+        }
+      }
+
+      // ── Day of week: 7 circles on inner perimeter (r = 0.650) ─────
       // Ordered Mon→Sun, matching hour positions 9→3
       const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15];
-      const dayCircleRad  = 0.780;
+      const dayCircleRad  = 0.650;
       const dayCircleR    = stem * phi3;
 
       for (let d = 0; d < 7; d++) {
@@ -241,21 +255,6 @@
         circle.classList.add('tick');
         ticksEl.appendChild(circle);
       }
-
-      // ── Date of month: single tick on outer perimeter ─────────────
-      const dateInner = 0.955;
-      const dateOuter = 0.985;
-      const da        = curDate * 6 * Math.PI / 180;
-
-      const dateLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      dateLine.setAttribute('x1', ( Math.sin(da) * dateInner).toFixed(5));
-      dateLine.setAttribute('y1', (-Math.cos(da) * dateInner).toFixed(5));
-      dateLine.setAttribute('x2', ( Math.sin(da) * dateOuter).toFixed(5));
-      dateLine.setAttribute('y2', (-Math.cos(da) * dateOuter).toFixed(5));
-      dateLine.setAttribute('stroke-width',   sW);
-      dateLine.setAttribute('stroke-linecap', 'round');
-      dateLine.classList.add('tick');
-      ticksEl.appendChild(dateLine);
     }
 
     // ─── Hand builders ─────────────────────────────────────────────
