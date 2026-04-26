@@ -102,9 +102,10 @@
       right: 24px;
       bottom: 24px;
       z-index: 10;
-      display: grid;
-      gap: 10px;
-      justify-items: end;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
     }
 
     .control-dock,
@@ -116,15 +117,15 @@
     }
 
     .controls-panel {
-      width: 188px;
-      flex-wrap: wrap;
-      padding: 10px;
-      border: 1px solid color-mix(in srgb, var(--ui-color) 12%, transparent);
-      border-radius: 18px;
-      background: color-mix(in srgb, var(--bg-color) 72%, transparent);
-      box-shadow: 0 16px 50px color-mix(in srgb, #000 14%, transparent);
-      backdrop-filter: blur(18px);
-      transform-origin: bottom right;
+      width: auto;
+      flex-wrap: nowrap;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      transform-origin: right center;
       transition:
         opacity 0.18s ease,
         transform 0.18s ease;
@@ -173,13 +174,24 @@
       background: none;
     }
 
+    .control-separator {
+      width: 1px;
+      height: 20px;
+      opacity: 0.24;
+      background: var(--ui-color);
+    }
+
     .control-slider {
-      width: 100%;
+      width: 84px;
       height: 36px;
-      opacity: 0.42;
+      flex: 0 0 84px;
+      opacity: 0.28;
       transition: opacity 0.2s ease;
+      background: transparent;
       cursor: pointer;
       accent-color: var(--accent-color);
+      appearance: none;
+      -webkit-appearance: none;
     }
 
     .control-slider:hover,
@@ -188,10 +200,60 @@
       outline: none;
     }
 
+    .control-slider::-webkit-slider-runnable-track {
+      height: 1px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--ui-color) 32%, transparent);
+    }
+
+    .control-slider::-webkit-slider-thumb {
+      width: 9px;
+      height: 9px;
+      margin-top: -4px;
+      border: 0;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--ui-color) 72%, transparent);
+      -webkit-appearance: none;
+    }
+
+    .control-slider::-moz-range-track {
+      height: 1px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--ui-color) 32%, transparent);
+    }
+
+    .control-slider::-moz-range-thumb {
+      width: 9px;
+      height: 9px;
+      border: 0;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--ui-color) 72%, transparent);
+    }
+
     @media (max-width: 560px) {
       .controls-shell {
         right: 16px;
         bottom: 16px;
+        gap: 4px;
+      }
+
+      .control-dock,
+      .controls-panel {
+        gap: 4px;
+      }
+
+      .control-btn {
+        width: 32px;
+        height: 32px;
+      }
+
+      .control-slider {
+        width: 64px;
+        flex-basis: 64px;
+      }
+
+      .control-separator {
+        height: 18px;
       }
     }
 
@@ -220,51 +282,89 @@
     <div id="controlsPanel" class="controls-panel" hidden>
       <input class="control-slider" type="range" id="stemSlider" min="2" max="20" value="5" step="1" aria-label="Stem weight" title="Stem weight">
 
+      <span class="control-separator" aria-hidden="true"></span>
+
       <button class="control-btn" id="minToggle" aria-label="Show minute ticks" title="Minute ticks">
         <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
-          <line x1="0"     y1="-0.62" x2="0"     y2="-0.90" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
-          <line x1="0.62"  y1="0"     x2="0.90"  y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
-          <line x1="0"     y1="0.62"  x2="0"     y2="0.90"  stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
-          <line x1="-0.62" y1="0"     x2="-0.90" y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(30)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(60)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(90)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(120)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(150)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(180)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(210)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(240)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(270)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(300)"/>
+          <line x1="0" y1="-0.72" x2="0" y2="-0.88" stroke="currentColor" stroke-width="0.08" stroke-linecap="round" transform="rotate(330)"/>
         </svg>
       </button>
-
-      <button class="control-btn" id="fpsToggle" aria-label="Switch to ticking mode" title="Ticking mode"></button>
 
       <button class="control-btn" id="hourToggle" aria-label="Hide hour ticks" title="Hour ticks">
         <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
-          <line x1="0" y1="-0.46" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
-          <line x1="0.46" y1="0" x2="0.84" y2="0" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
-          <line x1="0" y1="0.46" x2="0" y2="0.84" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
-          <line x1="-0.46" y1="0" x2="-0.84" y2="0" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
+          <line x1="0" y1="-0.50" x2="0" y2="-0.86" stroke="currentColor" stroke-width="0.16" stroke-linecap="round"/>
+          <line x1="0" y1="-0.50" x2="0" y2="-0.86" stroke="currentColor" stroke-width="0.16" stroke-linecap="round" transform="rotate(45)"/>
+          <line x1="0" y1="-0.50" x2="0" y2="-0.86" stroke="currentColor" stroke-width="0.16" stroke-linecap="round" transform="rotate(90)"/>
+          <line x1="0" y1="-0.50" x2="0" y2="-0.86" stroke="currentColor" stroke-width="0.16" stroke-linecap="round" transform="rotate(135)"/>
+          <line x1="0" y1="-0.50" x2="0" y2="-0.86" stroke="currentColor" stroke-width="0.16" stroke-linecap="round" transform="rotate(180)"/>
+          <line x1="0" y1="-0.50" x2="0" y2="-0.86" stroke="currentColor" stroke-width="0.16" stroke-linecap="round" transform="rotate(225)"/>
+          <line x1="0" y1="-0.50" x2="0" y2="-0.86" stroke="currentColor" stroke-width="0.16" stroke-linecap="round" transform="rotate(270)"/>
+          <line x1="0" y1="-0.50" x2="0" y2="-0.86" stroke="currentColor" stroke-width="0.16" stroke-linecap="round" transform="rotate(315)"/>
         </svg>
       </button>
 
+      <span class="control-separator" aria-hidden="true"></span>
+
       <button class="control-btn" id="dayToggle" aria-label="Hide day marker" title="Day marker">
         <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
-          <circle cx="-0.72" cy="0.02" r="0.10" stroke="currentColor" stroke-width="0.12"/>
-          <circle cx="-0.48" cy="-0.40" r="0.10" stroke="currentColor" stroke-width="0.12"/>
-          <circle cx="-0.18" cy="-0.64" r="0.10" stroke="currentColor" stroke-width="0.12"/>
-          <circle cx="0.18" cy="-0.64" r="0.10" fill="currentColor"/>
-          <circle cx="0.48" cy="-0.40" r="0.10" stroke="currentColor" stroke-width="0.12"/>
-          <circle cx="0.72" cy="0.02" r="0.10" stroke="currentColor" stroke-width="0.12"/>
-          <circle cx="0" cy="0.34" r="0.10" stroke="currentColor" stroke-width="0.12"/>
+          <circle cx="-0.64" cy="0.10" r="0.10" fill="currentColor"/>
+          <circle cx="-0.42" cy="-0.34" r="0.10" fill="currentColor"/>
+          <circle cx="0" cy="-0.52" r="0.10" fill="currentColor"/>
+          <circle cx="0.42" cy="-0.34" r="0.10" fill="currentColor"/>
+          <circle cx="0.64" cy="0.10" r="0.10" fill="currentColor"/>
         </svg>
       </button>
 
       <button class="control-btn" id="dateToggle" aria-label="Hide date marker" title="Date marker">
         <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
-          <circle cx="0" cy="0" r="0.68" stroke="currentColor" stroke-width="0.10"/>
-          <line x1="0.50" y1="0.10" x2="0.78" y2="0.15" stroke="currentColor" stroke-width="0.16" stroke-linecap="round"/>
+          <path d="M 0 -0.68 A 0.68 0.68 0 0 1 0 0.68" stroke="currentColor" stroke-width="0.09" stroke-linecap="round"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(16.36)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(32.73)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(49.09)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(65.45)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(81.82)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(98.18)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(114.55)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(130.91)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(147.27)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(163.64)"/>
+          <line x1="0" y1="-0.66" x2="0" y2="-0.82" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(180)"/>
         </svg>
       </button>
 
       <button class="control-btn" id="monthToggle" aria-label="Hide month marker" title="Month marker">
         <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
-          <circle cx="0" cy="0" r="0.68" stroke="currentColor" stroke-width="0.10"/>
-          <line x1="0" y1="-0.34" x2="0" y2="-0.80" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
+          <circle cx="0" cy="0" r="0.52" stroke="currentColor" stroke-width="0.08"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(30)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(60)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(90)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(120)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(150)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(180)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(210)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(240)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(270)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(300)"/>
+          <line x1="0" y1="-0.68" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.06" stroke-linecap="round" transform="rotate(330)"/>
         </svg>
       </button>
+
+      <span class="control-separator" aria-hidden="true"></span>
+
+      <button class="control-btn" id="fpsToggle" aria-label="Switch to ticking mode" title="Ticking mode"></button>
 
       <button class="control-btn dev-mode-control" id="randomizeBtn" aria-label="Dev mode: randomize calendar and time" title="Dev mode" hidden>
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -647,13 +747,12 @@
     // ─── FPS toggle ────────────────────────────────────────────────
     const THEME_MODES = ['system', 'light', 'dark'];
 
-    // Continuous: full circle. Ticking: circle with gap at 12 o'clock.
-    // Gap endpoints are at ±0.25 on x, at y = -sqrt(0.65²-0.25²) ≈ -0.601.
+    // Continuous: full circle. Ticking: dotted circle.
     const ICON_CONTINUOUS = `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
-      <circle cx="0" cy="0" r="0.65" stroke="currentColor" stroke-width="0.14"/>
+      <circle cx="0" cy="0" r="0.66" stroke="currentColor" stroke-width="0.12"/>
     </svg>`;
     const ICON_TICKING = `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
-      <path d="M -0.25 -0.601 A 0.65 0.65 0 1 1 0.25 -0.601" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+      <circle cx="0" cy="0" r="0.66" stroke="currentColor" stroke-width="0.12" stroke-linecap="round" stroke-dasharray="0.02 0.22"/>
     </svg>`;
     const THEME_ICONS = {
       system: `<svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
