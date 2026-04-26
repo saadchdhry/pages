@@ -65,8 +65,8 @@
     }
 
     #clock {
-      width: min(70vw, 70vh);
-      height: min(70vw, 70vh);
+      width: min(50vw, 50vh);
+      height: min(50vw, 50vh);
       display: block;
       border-radius: 50%;
     }
@@ -193,7 +193,7 @@
 
     <rect x="-1" y="-1" width="2" height="2" class="bg" />
 
-    <circle cx="0" cy="0" r="0.35" class="pip" />
+    <circle id="pip" cx="0" cy="0" r="0.35" class="pip" />
 
     <g id="ticks"></g>
 
@@ -236,6 +236,9 @@
     const PHI  = (1 + Math.sqrt(5)) / 2;
     let   stem = 0.005;
     let   sW, mW, hW;
+    const BASE_TICK_OUTER = 0.940;
+    const DIAL_OUTER_R    = 0.800;
+    const DIAL_SCALE      = DIAL_OUTER_R / BASE_TICK_OUTER;
     const SECOND_LOLLIPOP_R = 0.040;
     let   testNow = null;
 
@@ -249,6 +252,14 @@
       hW = stem * PHI * PHI * PHI * PHI;
     }
 
+    function dialR(value) {
+      return value * DIAL_SCALE;
+    }
+
+    function buildPip() {
+      document.getElementById('pip').setAttribute('r', dialR(0.350).toFixed(5));
+    }
+
     // ─── Tick marks ────────────────────────────────────────────────
     const ticksEl    = document.getElementById('ticks');
     const minTicksEl = document.getElementById('minTicks');
@@ -257,8 +268,8 @@
       ticksEl.innerHTML    = '';
       minTicksEl.innerHTML = '';
 
-      const tickOuter  = 0.940;
-      const majorInner = 0.860;
+      const tickOuter  = DIAL_OUTER_R;
+      const majorInner = dialR(0.860);
       const majorLen   = tickOuter - majorInner;
       const minorInner = tickOuter - majorLen / (PHI * PHI);
       const minorLen   = tickOuter - minorInner;
@@ -308,10 +319,10 @@
         }
       }
 
-      // ── Day of week: 7 circles on inner perimeter (r = 0.650) ─────
+      // ── Day of week: 7 circles on inner perimeter ────────────────
       // Ordered Mon→Sun, matching hour positions 9→3
       const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15];
-      const dayCircleRad    = 0.650;
+      const dayCircleRad    = dialR(0.650);
       const dayCircleOuterR = SECOND_LOLLIPOP_R;
       const dayCircleR      = Math.max(dayCircleOuterR - (sW / 2), 0);
 
@@ -359,10 +370,10 @@
       mHandEl.innerHTML = '';
       sHandEl.innerHTML = '';
 
-      hHandEl.appendChild(mkRect(-hW/2, -0.500, hW, 0.570, hW/2));
-      mHandEl.appendChild(mkRect(-mW/2, -0.755, mW, 0.845, mW/2));
-      sHandEl.appendChild(mkRect(-sW/2, -0.862, sW, 0.952, sW/2));
-      sHandEl.appendChild(mkCircle(0, 0.210, SECOND_LOLLIPOP_R));
+      hHandEl.appendChild(mkRect(-hW/2, dialR(-0.500), hW, dialR(0.570), hW/2));
+      mHandEl.appendChild(mkRect(-mW/2, dialR(-0.755), mW, dialR(0.845), mW/2));
+      sHandEl.appendChild(mkRect(-sW/2, dialR(-0.862), sW, dialR(0.952), sW/2));
+      sHandEl.appendChild(mkCircle(0, dialR(0.210), SECOND_LOLLIPOP_R));
     }
 
     function renderHands(now) {
@@ -399,6 +410,7 @@
     // ─── Build ─────────────────────────────────────────────────────
     function build() {
       updateWidths();
+      buildPip();
       buildTicks();
       buildHands();
     }
