@@ -496,10 +496,22 @@
           } else if (showHourTicks) {
             appendTick(ticksEl, a, majorInner, tickOuter, mW, 'hour-tick');
           }
-          if (showDate && isDateTick) appendTick(ticksEl, a, dateInner, tickOuter, sW);
-        } else if (showDate && isDateTick) {
-          appendTick(ticksEl, a, dateInner, tickOuter, sW);
         }
+      }
+
+      // ── Date: tiny dot just inside the minute ring ───────────────
+      if (showDate) {
+        const dateDotA   = dateTickIdx * 6 * Math.PI / 180;
+        const dateDotRad = minorInner - 3 * sW;
+        const dateDotR   = sW / 2;
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', ( Math.sin(dateDotA) * dateDotRad).toFixed(5));
+        circle.setAttribute('cy', (-Math.cos(dateDotA) * dateDotRad).toFixed(5));
+        circle.setAttribute('r',  dateDotR.toFixed(5));
+        circle.setAttribute('stroke-width', 0);
+        circle.classList.add('tick');
+        ticksEl.appendChild(circle);
       }
 
       // ── Day of week: 7 circles on inner perimeter ────────────────
@@ -646,7 +658,7 @@
     }
 
     window.setClockDevMode = setDevMode;
-    setDevMode(false);
+    setDevMode(true);
 
     const savedStem = localStorage.getItem('stem');
     if (savedStem !== null) {
