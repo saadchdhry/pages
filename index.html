@@ -91,98 +91,104 @@
       will-change: transform;
     }
 
-    /* ── FPS toggle ── */
-    #fpsToggle {
+    /* ── Controls ── */
+    .controls-shell {
       position: fixed;
-      bottom: 120px;
       right: 24px;
-      width: 36px;
-      height: 36px;
-      opacity: 0.18;
-      transition: opacity 0.2s ease;
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #fpsToggle:hover   { opacity: 0.55; }
-    #fpsToggle.ticking { opacity: 0.40; }
-
-    /* ── Minute tick toggle ── */
-    #minToggle {
-      position: fixed;
-      bottom: 72px;
-      right: 24px;
-      width: 36px;
-      height: 36px;
-      opacity: 0.18;
-      transition: opacity 0.2s ease;
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #minToggle:hover  { opacity: 0.55; }
-    #minToggle.active { opacity: 0.40; }
-
-    /* ── Randomize button ── */
-    #randomizeBtn {
-      position: fixed;
-      bottom: 72px;
-      left: 24px;
-      width: 36px;
-      height: 36px;
-      opacity: 0.18;
-      transition: opacity 0.2s ease;
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #randomizeBtn:hover  { opacity: 0.55; }
-    #randomizeBtn.active { opacity: 0.40; }
-
-    /* ── Theme toggle ── */
-    #themeToggle {
-      position: fixed;
       bottom: 24px;
-      right: 24px;
+      z-index: 10;
+      display: grid;
+      gap: 10px;
+      justify-items: end;
+    }
+
+    .control-dock,
+    .controls-panel {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .controls-panel {
+      width: 188px;
+      flex-wrap: wrap;
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--ui-color) 12%, transparent);
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--bg-color) 72%, transparent);
+      box-shadow: 0 16px 50px color-mix(in srgb, #000 14%, transparent);
+      backdrop-filter: blur(18px);
+      transform-origin: bottom right;
+      transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+    }
+
+    .controls-panel[hidden],
+    .dev-mode-control[hidden] {
+      display: none;
+    }
+
+    .control-btn {
       width: 36px;
       height: 36px;
-      opacity: 0.18;
-      transition: opacity 0.2s ease;
+      color: var(--ui-color);
+      opacity: 0.26;
+      transition:
+        opacity 0.2s ease,
+        background-color 0.2s ease,
+        transform 0.2s ease;
       background: none;
       border: none;
+      border-radius: 50%;
       padding: 0;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    #themeToggle:hover  { opacity: 0.55; }
-    #themeToggle.active { opacity: 0.40; }
 
-    /* ── Stem slider ── */
-    #stemSlider {
-      position: fixed;
-      bottom: 32px;
-      left: 24px;
-      width: 80px;
-      opacity: 0.18;
+    .control-btn:hover,
+    .control-btn:focus-visible {
+      opacity: 0.72;
+      outline: none;
+      background: color-mix(in srgb, var(--ui-color) 8%, transparent);
+    }
+
+    .control-btn.active,
+    .control-btn.ticking,
+    #controlsToggle[aria-expanded="true"] {
+      opacity: 0.88;
+      background: color-mix(in srgb, var(--ui-color) 12%, transparent);
+    }
+
+    #themeToggle.active {
+      opacity: 0.56;
+      background: none;
+    }
+
+    .control-slider {
+      width: 100%;
+      height: 36px;
+      opacity: 0.42;
       transition: opacity 0.2s ease;
       cursor: pointer;
+      accent-color: var(--accent-color);
     }
-    #stemSlider:hover { opacity: 0.55; }
-    #stemSlider { accent-color: var(--accent-color); }
+
+    .control-slider:hover,
+    .control-slider:focus-visible {
+      opacity: 0.82;
+      outline: none;
+    }
+
+    @media (max-width: 560px) {
+      .controls-shell {
+        right: 16px;
+        bottom: 16px;
+      }
+    }
 
   </style>
 </head>
@@ -205,31 +211,83 @@
 
   </svg>
 
-  <input type="range" id="stemSlider" min="2" max="20" value="5" step="1" aria-label="Stroke weight">
+  <div class="controls-shell">
+    <div id="controlsPanel" class="controls-panel" hidden>
+      <input class="control-slider" type="range" id="stemSlider" min="2" max="20" value="5" step="1" aria-label="Stem weight" title="Stem weight">
 
-  <button id="randomizeBtn" aria-label="Randomize calendar and time">
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <rect x="3.5" y="3.5" width="13" height="13" rx="3" stroke="currentColor" stroke-width="1.4"/>
-      <circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/>
-      <circle cx="13" cy="7" r="1.2" fill="currentColor" stroke="none"/>
-      <circle cx="10" cy="10" r="1.2" fill="currentColor" stroke="none"/>
-      <circle cx="7" cy="13" r="1.2" fill="currentColor" stroke="none"/>
-      <circle cx="13" cy="13" r="1.2" fill="currentColor" stroke="none"/>
-    </svg>
-  </button>
+      <button class="control-btn" id="minToggle" aria-label="Show minute ticks" title="Minute ticks">
+        <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
+          <line x1="0"     y1="-0.62" x2="0"     y2="-0.90" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+          <line x1="0.62"  y1="0"     x2="0.90"  y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+          <line x1="0"     y1="0.62"  x2="0"     y2="0.90"  stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+          <line x1="-0.62" y1="0"     x2="-0.90" y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+        </svg>
+      </button>
 
-  <button id="fpsToggle" aria-label="Toggle continuous / ticking mode"></button>
+      <button class="control-btn" id="fpsToggle" aria-label="Switch to ticking mode" title="Ticking mode"></button>
 
-  <button id="minToggle" aria-label="Toggle minute markers">
-    <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none">
-      <line x1="0"     y1="-0.62" x2="0"     y2="-0.90" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
-      <line x1="0.62"  y1="0"     x2="0.90"  y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
-      <line x1="0"     y1="0.62"  x2="0"     y2="0.90"  stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
-      <line x1="-0.62" y1="0"     x2="-0.90" y2="0"     stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
-    </svg>
-  </button>
+      <button class="control-btn" id="hourToggle" aria-label="Hide hour ticks" title="Hour ticks">
+        <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
+          <line x1="0" y1="-0.46" x2="0" y2="-0.84" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
+          <line x1="0.46" y1="0" x2="0.84" y2="0" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
+          <line x1="0" y1="0.46" x2="0" y2="0.84" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
+          <line x1="-0.46" y1="0" x2="-0.84" y2="0" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
+        </svg>
+      </button>
 
-  <button id="themeToggle" aria-label="Theme: System"></button>
+      <button class="control-btn" id="dayToggle" aria-label="Hide day marker" title="Day marker">
+        <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
+          <circle cx="-0.72" cy="0.02" r="0.10" stroke="currentColor" stroke-width="0.12"/>
+          <circle cx="-0.48" cy="-0.40" r="0.10" stroke="currentColor" stroke-width="0.12"/>
+          <circle cx="-0.18" cy="-0.64" r="0.10" stroke="currentColor" stroke-width="0.12"/>
+          <circle cx="0.18" cy="-0.64" r="0.10" fill="currentColor"/>
+          <circle cx="0.48" cy="-0.40" r="0.10" stroke="currentColor" stroke-width="0.12"/>
+          <circle cx="0.72" cy="0.02" r="0.10" stroke="currentColor" stroke-width="0.12"/>
+          <circle cx="0" cy="0.34" r="0.10" stroke="currentColor" stroke-width="0.12"/>
+        </svg>
+      </button>
+
+      <button class="control-btn" id="dateToggle" aria-label="Hide date marker" title="Date marker">
+        <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
+          <circle cx="0" cy="0" r="0.68" stroke="currentColor" stroke-width="0.10"/>
+          <line x1="0.50" y1="0.10" x2="0.78" y2="0.15" stroke="currentColor" stroke-width="0.16" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <button class="control-btn" id="monthToggle" aria-label="Hide month marker" title="Month marker">
+        <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
+          <circle cx="0" cy="0" r="0.68" stroke="currentColor" stroke-width="0.10"/>
+          <line x1="0" y1="-0.34" x2="0" y2="-0.80" stroke="currentColor" stroke-width="0.18" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <button class="control-btn dev-mode-control" id="randomizeBtn" aria-label="Dev mode: randomize calendar and time" title="Dev mode" hidden>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <rect x="3.5" y="3.5" width="13" height="13" rx="3" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/>
+          <circle cx="13" cy="7" r="1.2" fill="currentColor" stroke="none"/>
+          <circle cx="10" cy="10" r="1.2" fill="currentColor" stroke="none"/>
+          <circle cx="7" cy="13" r="1.2" fill="currentColor" stroke="none"/>
+          <circle cx="13" cy="13" r="1.2" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="control-dock">
+      <button class="control-btn" id="controlsToggle" aria-label="Show clock controls" aria-controls="controlsPanel" aria-expanded="false" title="Controls">
+        <svg width="20" height="20" viewBox="-1 -1 2 2" fill="none" aria-hidden="true">
+          <line x1="-0.72" y1="-0.46" x2="0.72" y2="-0.46" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+          <line x1="-0.72" y1="0" x2="0.72" y2="0" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+          <line x1="-0.72" y1="0.46" x2="0.72" y2="0.46" stroke="currentColor" stroke-width="0.14" stroke-linecap="round"/>
+          <circle cx="-0.26" cy="-0.46" r="0.16" fill="var(--bg-color)" stroke="currentColor" stroke-width="0.12"/>
+          <circle cx="0.30" cy="0" r="0.16" fill="var(--bg-color)" stroke="currentColor" stroke-width="0.12"/>
+          <circle cx="-0.02" cy="0.46" r="0.16" fill="var(--bg-color)" stroke="currentColor" stroke-width="0.12"/>
+        </svg>
+      </button>
+
+      <button class="control-btn" id="themeToggle" aria-label="Theme: System" title="Theme"></button>
+    </div>
+  </div>
 
   <script>
     // ─── Design constants ──────────────────────────────────────────
@@ -263,6 +321,18 @@
     // ─── Tick marks ────────────────────────────────────────────────
     const ticksEl    = document.getElementById('ticks');
     const minTicksEl = document.getElementById('minTicks');
+    const markerVisibility = {
+      hour: true,
+      day: true,
+      date: true,
+      month: true
+    };
+    const markerStorageKeys = {
+      hour: 'showHourTicks',
+      day: 'showDayMarker',
+      date: 'showDateMarker',
+      month: 'showMonthMarker'
+    };
 
     function buildTicks() {
       ticksEl.innerHTML    = '';
@@ -281,6 +351,10 @@
       const curMonth = now.getMonth();  // 0–11; 0=Jan
       const curDay   = now.getDay();    // 0=Sun…6=Sat
       const curDate  = now.getDate();   // 1–31
+      const showHourTicks = markerVisibility.hour;
+      const showDay       = markerVisibility.day;
+      const showDate      = markerVisibility.date;
+      const showMonth     = markerVisibility.month;
 
       // Jan(0)→i=5, Feb(1)→i=10, …, Dec(11)→i=0
       const monthTickIdx = ((curMonth + 1) % 12) * 5;
@@ -310,9 +384,13 @@
         const a           = i * 6 * Math.PI / 180;
 
         if (major) {
-          appendTick(ticksEl, a, isMonthTick ? monthInner : majorInner, tickOuter, mW);
-          if (isDateTick) appendTick(ticksEl, a, dateInner, tickOuter, sW);
-        } else if (isDateTick) {
+          if (showMonth && isMonthTick) {
+            appendTick(ticksEl, a, monthInner, tickOuter, mW);
+          } else if (showHourTicks) {
+            appendTick(ticksEl, a, majorInner, tickOuter, mW);
+          }
+          if (showDate && isDateTick) appendTick(ticksEl, a, dateInner, tickOuter, sW);
+        } else if (showDate && isDateTick) {
           appendTick(ticksEl, a, dateInner, tickOuter, sW);
         } else {
           appendTick(minTicksEl, a, minorInner, tickOuter, sW);
@@ -321,6 +399,8 @@
 
       // ── Day of week: 7 circles on inner perimeter ────────────────
       // Ordered Mon→Sun, matching hour positions 9→3
+      if (!showDay) return;
+
       const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15];
       const dayCircleRad    = dialR(0.650);
       const dayCircleOuterR = SECOND_LOLLIPOP_R;
@@ -362,6 +442,23 @@
     const hHandEl = document.getElementById('hHand');
     const mHandEl = document.getElementById('mHand');
     const sHandEl = document.getElementById('sHand');
+    const controlsShellEl = document.querySelector('.controls-shell');
+    const controlsToggleEl = document.getElementById('controlsToggle');
+    const controlsPanelEl = document.getElementById('controlsPanel');
+    const minToggleEl = document.getElementById('minToggle');
+    const fpsToggleEl = document.getElementById('fpsToggle');
+    const markerToggles = {
+      hour: document.getElementById('hourToggle'),
+      day: document.getElementById('dayToggle'),
+      date: document.getElementById('dateToggle'),
+      month: document.getElementById('monthToggle')
+    };
+    const markerLabels = {
+      hour: 'hour ticks',
+      day: 'day marker',
+      date: 'date marker',
+      month: 'month marker'
+    };
     const randomizeBtnEl = document.getElementById('randomizeBtn');
     const themeToggleEl = document.getElementById('themeToggle');
 
@@ -418,17 +515,44 @@
     // ─── Restore persisted settings ────────────────────────────────
     const slider = document.getElementById('stemSlider');
 
+    function setControlsPanelOpen(open) {
+      controlsPanelEl.hidden = !open;
+      controlsToggleEl.setAttribute('aria-expanded', open);
+      controlsToggleEl.setAttribute('aria-label', open ? 'Hide clock controls' : 'Show clock controls');
+    }
+
+    function setMinuteTicksVisible(visible, persist = true) {
+      minTicksEl.style.display = visible ? '' : 'none';
+      minToggleEl.classList.toggle('active', visible);
+      minToggleEl.setAttribute('aria-label', visible ? 'Hide minute ticks' : 'Show minute ticks');
+      if (persist) localStorage.setItem('minTicks', visible);
+    }
+
+    function setMarkerVisibility(name, visible, persist = true, rebuild = true) {
+      markerVisibility[name] = visible;
+      markerToggles[name].classList.toggle('active', visible);
+      markerToggles[name].setAttribute('aria-label', `${visible ? 'Hide' : 'Show'} ${markerLabels[name]}`);
+      if (persist) localStorage.setItem(markerStorageKeys[name], visible);
+      if (rebuild) buildTicks();
+    }
+
+    function setDevMode(enabled) {
+      randomizeBtnEl.hidden = !enabled;
+    }
+
+    window.setClockDevMode = setDevMode;
+    setDevMode(false);
+
     const savedStem = localStorage.getItem('stem');
     if (savedStem !== null) {
       slider.value = savedStem;
       stem = savedStem / 1000;
     }
 
-    const savedMinTicks = localStorage.getItem('minTicks');
-    if (savedMinTicks === 'true') {
-      minTicksEl.style.display = '';
-      document.getElementById('minToggle').classList.add('active');
-    }
+    setMinuteTicksVisible(localStorage.getItem('minTicks') === 'true', false);
+    Object.keys(markerVisibility).forEach((name) => {
+      setMarkerVisibility(name, localStorage.getItem(markerStorageKeys[name]) !== 'false', false, false);
+    });
 
     build();
 
@@ -478,12 +602,36 @@
 
     requestAnimationFrame(draw);
 
-    // ─── Minute tick toggle ────────────────────────────────────────
-    document.getElementById('minToggle').addEventListener('click', function () {
-      const visible = minTicksEl.style.display !== 'none';
-      minTicksEl.style.display = visible ? 'none' : '';
-      this.classList.toggle('active', !visible);
-      localStorage.setItem('minTicks', !visible);
+    // ─── Controls ─────────────────────────────────────────────────
+    controlsToggleEl.addEventListener('click', function () {
+      setControlsPanelOpen(controlsToggleEl.getAttribute('aria-expanded') !== 'true');
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') setControlsPanelOpen(false);
+    });
+
+    let clickStartedInControls = false;
+
+    document.addEventListener('pointerdown', function (event) {
+      clickStartedInControls = event.target instanceof Node && controlsShellEl.contains(event.target);
+    }, true);
+
+    document.addEventListener('click', function () {
+      if (!clickStartedInControls) {
+        setControlsPanelOpen(false);
+      }
+      clickStartedInControls = false;
+    });
+
+    minToggleEl.addEventListener('click', function () {
+      setMinuteTicksVisible(minTicksEl.style.display === 'none');
+    });
+
+    Object.keys(markerToggles).forEach((name) => {
+      markerToggles[name].addEventListener('click', function () {
+        setMarkerVisibility(name, !markerVisibility[name]);
+      });
     });
 
     // ─── Randomize test date/time ──────────────────────────────────
@@ -492,7 +640,6 @@
     });
 
     // ─── FPS toggle ────────────────────────────────────────────────
-    const fpsToggleEl = document.getElementById('fpsToggle');
     const THEME_MODES = ['system', 'light', 'dark'];
 
     // Continuous: full circle. Ticking: circle with gap at 12 o'clock.
@@ -553,6 +700,7 @@
       FRAME_MS    = 1000 / fps;
       fpsToggleEl.innerHTML = fps === 30 ? ICON_CONTINUOUS : ICON_TICKING;
       fpsToggleEl.classList.toggle('ticking', fps === 1);
+      fpsToggleEl.setAttribute('aria-label', fps === 30 ? 'Switch to ticking mode' : 'Switch to continuous mode');
       localStorage.setItem('fps', fps);
     }
 
