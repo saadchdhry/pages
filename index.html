@@ -89,6 +89,18 @@
       stroke: var(--ui-color);
     }
 
+    .month-dot {
+      mix-blend-mode: normal;
+      fill: var(--ui-color);
+      stroke: none;
+    }
+
+    .date-dot {
+      mix-blend-mode: difference;
+      fill: white;
+      stroke: none;
+    }
+
     /* Hint the browser to promote each hand to its own compositor layer. */
     #hHand,
     #mHand,
@@ -447,9 +459,9 @@
       const majorInner = dialR(0.860);
       const majorLen   = tickOuter - majorInner;
       const minorInner = tickOuter - majorLen / (PHI * PHI);
-      const minorLen   = tickOuter - minorInner;
-      const monthInner = tickOuter - (majorLen * PHI);
-      const dateInner  = tickOuter - (minorLen * PHI);
+      const monthDotR  = stem * (PHI ** 3) / 2;
+      const dateDotR   = stem * PHI / 2;
+      const markerOrbitR = tickOuter + monthDotR + (mW * PHI);
 
       // ── Calendar state ────────────────────────────────────────────
       const now      = getDisplayDate();
@@ -481,61 +493,59 @@
         target.appendChild(line);
       }
 
+      function appendDot(target, angle, radius, orbit, ...classes) {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', ( Math.sin(angle) * orbit).toFixed(5));
+        circle.setAttribute('cy', (-Math.cos(angle) * orbit).toFixed(5));
+        circle.setAttribute('r', radius.toFixed(5));
+        circle.classList.add(...classes);
+        target.appendChild(circle);
+      }
+
       // ── Hour & minute ticks ───────────────────────────────────────
       for (let i = 0; i < 60; i++) {
         const major       = (i % 5 === 0);
-        const isMonthTick = i === monthTickIdx;
-        const isDateTick  = i === dateTickIdx;
         const a           = i * 6 * Math.PI / 180;
 
         appendTick(minTicksEl, a, minorInner, tickOuter, sW);
 
-        if (major) {
-          if (showMonth && isMonthTick) {
-            appendTick(ticksEl, a, monthInner, tickOuter, mW);
-          } else if (showHourTicks) {
-            appendTick(ticksEl, a, majorInner, tickOuter, mW, 'hour-tick');
-          }
+        if (major && showHourTicks) {
+          appendTick(ticksEl, a, majorInner, tickOuter, mW, 'hour-tick');
         }
       }
 
-      // ── Date: tiny dot just inside the minute ring ───────────────
-      if (showDate) {
-        const dateDotA   = dateTickIdx * 6 * Math.PI / 180;
-        const dateDotRad = minorInner - 3 * sW;
-        const dateDotR   = sW / 2;
-
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', ( Math.sin(dateDotA) * dateDotRad).toFixed(5));
-        circle.setAttribute('cy', (-Math.cos(dateDotA) * dateDotRad).toFixed(5));
-        circle.setAttribute('r',  dateDotR.toFixed(5));
-        circle.setAttribute('stroke-width', 0);
-        circle.classList.add('tick');
-        ticksEl.appendChild(circle);
+      if (showMonth) {
+        const monthDotA = monthTickIdx * 6 * Math.PI / 180;
+        appendDot(ticksEl, monthDotA, monthDotR, markerOrbitR, 'month-dot');
       }
 
       // ── Day of week: 7 circles on inner perimeter ────────────────
       // Ordered Mon→Sun, matching hour positions 9→3
-      if (!showDay) return;
+      if (showDay) {
+        const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15];
+        const dayCircleRad    = dialR(0.650);
+        const dayCircleOuterR = SECOND_LOLLIPOP_R;
+        const dayCircleR      = Math.max(dayCircleOuterR - (sW / 2), 0);
 
-      const DAY_POSITIONS = [45, 50, 55, 0, 5, 10, 15];
-      const dayCircleRad    = dialR(0.650);
-      const dayCircleOuterR = SECOND_LOLLIPOP_R;
-      const dayCircleR      = Math.max(dayCircleOuterR - (sW / 2), 0);
+        for (let d = 0; d < 7; d++) {
+          const idx     = DAY_POSITIONS[d];
+          const a       = idx * 6 * Math.PI / 180;
+          const isToday = idx === dayTickIdx;
 
-      for (let d = 0; d < 7; d++) {
-        const idx     = DAY_POSITIONS[d];
-        const a       = idx * 6 * Math.PI / 180;
-        const isToday = idx === dayTickIdx;
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', ( Math.sin(a) * dayCircleRad).toFixed(5));
+          circle.setAttribute('cy', (-Math.cos(a) * dayCircleRad).toFixed(5));
+          circle.setAttribute('r',  dayCircleR.toFixed(5));
+          circle.setAttribute('stroke-width', sW);
+          if (!isToday) circle.style.fill = 'none';
+          circle.classList.add('tick');
+          ticksEl.appendChild(circle);
+        }
+      }
 
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', ( Math.sin(a) * dayCircleRad).toFixed(5));
-        circle.setAttribute('cy', (-Math.cos(a) * dayCircleRad).toFixed(5));
-        circle.setAttribute('r',  dayCircleR.toFixed(5));
-        circle.setAttribute('stroke-width', sW);
-        if (!isToday) circle.style.fill = 'none';
-        circle.classList.add('tick');
-        ticksEl.appendChild(circle);
+      if (showDate) {
+        const dateDotA = dateTickIdx * 6 * Math.PI / 180;
+        appendDot(ticksEl, dateDotA, dateDotR, markerOrbitR, 'date-dot');
       }
     }
 
