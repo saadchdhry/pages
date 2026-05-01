@@ -22,7 +22,6 @@ Use that preview for quick visual checks.
 github-pages/
 ├── index.html          <- active working file; all new work goes here
 ├── TASK.md             <- this handoff note
-├── old.html            <- deprecated, ignore
 ├── favicon.png
 └── docs/
     ├── sitemap.md

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>&#8212;</title>
+  <title>Clock</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <script>
     const savedThemeMode = localStorage.getItem('themeMode');
@@ -438,6 +438,7 @@
     // ─── Tick marks ────────────────────────────────────────────────
     const ticksEl    = document.getElementById('ticks');
     const minTicksEl = document.getElementById('minTicks');
+    let minuteTicksVisible = false;
     const markerVisibility = {
       hour: true,
       day: true,
@@ -476,6 +477,8 @@
       // Jan(0)→i=5, Feb(1)→i=10, …, Dec(11)→i=0
       const monthTickIdx = ((curMonth + 1) % 12) * 5;
       const dateTickIdx  = curDate;
+      const showMinuteTicks = minuteTicksVisible;
+      const dateOnHourBoundary = (dateTickIdx % 5 === 0);
 
       // Mon→45, Tue→50, Wed→55, Thu→0, Fri→5, Sat→10, Sun→15
       const DAY_TO_IDX = [15, 45, 50, 55, 0, 5, 10];
@@ -511,6 +514,16 @@
 
         if (major && showHourTicks) {
           appendTick(ticksEl, a, majorInner, tickOuter, mW, 'hour-tick');
+        }
+      }
+
+      if (showDate && !showMinuteTicks && showHourTicks && !dateOnHourBoundary) {
+        const segmentStart = Math.floor(dateTickIdx / 5) * 5;
+
+        for (let i = 1; i <= 4; i++) {
+          const idx = segmentStart + i;
+          const a   = idx * 6 * Math.PI / 180;
+          appendTick(ticksEl, a, minorInner, tickOuter, sW);
         }
       }
 
@@ -649,10 +662,12 @@
     }
 
     function setMinuteTicksVisible(visible, persist = true) {
+      minuteTicksVisible = visible;
       minTicksEl.style.display = visible ? '' : 'none';
       minToggleEl.classList.toggle('active', visible);
       minToggleEl.setAttribute('aria-label', visible ? 'Hide minute ticks' : 'Show minute ticks');
       if (persist) localStorage.setItem('minTicks', visible);
+      buildTicks();
     }
 
     function setMarkerVisibility(name, visible, persist = true, rebuild = true) {
