@@ -4,8 +4,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clock</title>
+  <title>PiP Clock | Fullscreen Analog Clock for Picture-in-Picture Switching</title>
+  <meta name="description" content="Minimal fullscreen analog clock designed as a clean pinned tab so your current browser tab can move into Picture-in-Picture mode during video calls, screen sharing, and video playback.">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="Saad Choudhry">
+  <meta name="keywords" content="PiP clock, picture in picture helper, fullscreen clock, pinned tab clock, video call utility, browser clock, analog clock, GitHub Pages">
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f5f3" media="(prefers-color-scheme: light)">
+  <meta name="application-name" content="PiP Clock">
+  <meta name="apple-mobile-web-app-title" content="PiP Clock">
+  <link rel="canonical" href="https://saadchdhry.github.io/pages/">
   <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="sitemap.xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PiP Clock">
+  <meta property="og:description" content="A minimal fullscreen analog clock built to serve as a default pinned tab, making it easy to send your active tab into Picture-in-Picture during calls or video playback.">
+  <meta property="og:url" content="https://saadchdhry.github.io/pages/">
+  <meta property="og:site_name" content="PiP Clock">
+  <meta property="og:image" content="https://saadchdhry.github.io/pages/og-image.svg">
+  <meta property="og:image:type" content="image/svg+xml">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PiP Clock">
+  <meta name="twitter:description" content="Fullscreen analog clock for pinned-tab workflows, Picture-in-Picture switching, video calls, and video playback.">
+  <meta name="twitter:image" content="https://saadchdhry.github.io/pages/og-image.svg">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://saadchdhry.github.io/pages/#website",
+          "url": "https://saadchdhry.github.io/pages/",
+          "name": "PiP Clock",
+          "description": "Minimal fullscreen analog clock designed to act as a pinned browser tab so the current active tab can be moved into Picture-in-Picture mode.",
+          "inLanguage": "en"
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://saadchdhry.github.io/pages/#webpage",
+          "url": "https://saadchdhry.github.io/pages/",
+          "name": "PiP Clock | Fullscreen Analog Clock for Picture-in-Picture Switching",
+          "isPartOf": {
+            "@id": "https://saadchdhry.github.io/pages/#website"
+          },
+          "description": "A no-distraction analog clock page used as a default pinned tab, especially useful when switching a browser's current tab into Picture-in-Picture mode during video calls, screen sharing, or video playback.",
+          "primaryImageOfPage": {
+            "@type": "ImageObject",
+            "url": "https://saadchdhry.github.io/pages/og-image.svg"
+          },
+          "about": [
+            "Picture-in-Picture workflows",
+            "Pinned browser tabs",
+            "Video calls",
+            "Video playback",
+            "Fullscreen clock"
+          ],
+          "breadcrumb": {
+            "@id": "https://saadchdhry.github.io/pages/#breadcrumb"
+          },
+          "inLanguage": "en"
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": "https://saadchdhry.github.io/pages/#breadcrumb",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://saadchdhry.github.io/pages/"
+            }
+          ]
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://saadchdhry.github.io/pages/#app",
+          "name": "PiP Clock",
+          "applicationCategory": "UtilitiesApplication",
+          "operatingSystem": "Web browser",
+          "url": "https://saadchdhry.github.io/pages/",
+          "image": "https://saadchdhry.github.io/pages/og-image.svg",
+          "description": "A lightweight browser utility that displays a fullscreen analog clock and serves as a clean placeholder tab, helping users move their active tab into Picture-in-Picture mode for video calls or media playback.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Fullscreen analog clock",
+            "Pinned-tab friendly layout",
+            "Useful for Picture-in-Picture workflows",
+            "Works well during video calls and media playback",
+            "Theme and display controls"
+          ]
+        }
+      ]
+    }
+  </script>
   <script>
     const savedThemeMode = localStorage.getItem('themeMode');
     if (savedThemeMode === 'dark' || savedThemeMode === 'light') {
@@ -274,7 +371,9 @@
 
 <body>
 
-  <svg id="clock" viewBox="-1 -1 2 2">
+  <svg id="clock" viewBox="-1 -1 2 2" role="img" aria-labelledby="clockTitle clockDesc">
+    <title id="clockTitle">PiP Clock</title>
+    <desc id="clockDesc">A minimal analog clock designed to be kept open as a pinned browser tab, making Picture-in-Picture tab switching easier during calls and video playback.</desc>
 
     <rect x="-1" y="-1" width="2" height="2" class="bg" />
 

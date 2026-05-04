@@ -1,0 +1,31 @@
+# PiP Clock
+
+> Minimal fullscreen analog clock designed to be a clean pinned browser tab, especially for Picture-in-Picture workflows during video calls and media playback.
+
+- Canonical URL: https://saadchdhry.github.io/pages/
+- Repository: https://github.com/saadchdhry/pages
+- Type: single-page web utility
+- Primary use case: keep this page pinned so your current tab can move into Picture-in-Picture mode
+
+## Summary
+
+PiP Clock is a no-distraction browser clock page. Its main value is workflow support rather than timekeeping alone: users keep it as the default visible tab so a meeting tab, video tab, or screen-sharing tab can be popped into Picture-in-Picture more easily.
+
+## Best For
+
+- Video calls and conferencing workflows
+- Watching video while keeping another app or tab in focus
+- Screen sharing setups where a neutral placeholder tab is useful
+- Users who want a calm, readable fullscreen clock page
+
+## Implementation Notes
+
+- Single self-contained HTML file
+- Inline SVG rendering
+- No external dependencies
+- Theme and display controls stored in localStorage
+
+## More Detail
+
+- [Full guide](https://saadchdhry.github.io/pages/llms-full.txt)
+- [Project README](https://github.com/saadchdhry/pages/blob/main/README.md)
